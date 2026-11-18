@@ -1,0 +1,118 @@
+{
+ "damyu": {
+  "bbox512": [
+   11,
+   115,
+   496,
+   400
+  ],
+  "a": [
+   21,
+   310
+  ],
+  "b": [
+   456,
+   310
+  ],
+  "kbBefore": 713,
+  "kbAfter": 70
+ },
+ "harunotsuki": {
+  "bbox512": [
+   17,
+   81,
+   497,
+   423
+  ],
+  "kbBefore": 1252,
+  "kbAfter": 91
+ },
+ "kimokdok": {
+  "bbox512": [
+   64,
+   5,
+   459,
+   502
+  ],
+  "kbBefore": 1011,
+  "kbAfter": 106
+ },
+ "kkutinho": {
+  "bbox512": [
+   26,
+   56,
+   484,
+   457
+  ],
+  "kbBefore": 1108,
+  "kbAfter": 79
+ },
+ "manjo": {
+  "bbox512": [
+   7,
+   17,
+   502,
+   494
+  ],
+  "kbBefore": 1358,
+  "kbAfter": 109
+ },
+ "moya": {
+  "bbox512": [
+   60,
+   49,
+   459,
+   478
+  ],
+  "kbBefore": 1047,
+  "kbAfter": 87
+ },
+ "nanwony": {
+  "bbox512": [
+   9,
+   25,
+   503,
+   447
+  ],
+  "kbBefore": 1431,
+  "kbAfter": 133
+ },
+ "yamuji": {
+  "bbox512": [
+   12,
+   169,
+   501,
+   359
+  ],
+  "kbBefore": 498,
+  "kbAfter": 51
+ },
+ "yappu": {
+  "bbox512": [
+   54,
+   82,
+   479,
+   444
+  ],
+  "kbBefore": 980,
+  "kbAfter": 102
+ },
+ "yuntami": {
+  "bbox512": [
+   2,
+   112,
+   502,
+   341
+  ],
+  "a": [
+   10,
+   222
+  ],
+  "b": [
+   392,
+   222
+  ],
+  "kbBefore": 720,
+  "kbAfter": 56
+ }
+}

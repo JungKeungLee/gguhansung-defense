@@ -1,0 +1,21 @@
+node_modules
+dist
+
+# 환경 변수·비밀정보
+.env
+.env.*
+*.local
+
+# 로그·캐시
+*.log
+npm-debug.log*
+.vite/
+
+# 편집기·OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 원본 압축본 (게임 실행에 불필요, 60MB)
+src/assets.zip
