@@ -6,14 +6,14 @@ export const FOCUS_UNLOCK_WAVE = 6;
 export const FOCUS_RATE = 0.8; // 6-G 승인: 65% → 80% (집중 소환으로 25웨이브 전후 5성 도전)
 
 /** 웨이브 출현 완료 보상: wave ≤ upTo 인 첫 구간 */
-/** 6J: 전역 강화 투자 여유를 위해 구간별 +15G (6I 기본: 55/70/85/100/115/130, 30웨이브 합계 +450G) */
+/** 6K: 소환·합성과 전역 강화 투자 여유를 위해 구간별 +20G (기본: 55/70/85/100/115/130, 30웨이브 합계 +600G) */
 export const WAVE_REWARDS = [
-  { upTo: 5, gold: 70 },
-  { upTo: 10, gold: 85 },
-  { upTo: 15, gold: 100 },
-  { upTo: 20, gold: 115 },
-  { upTo: 25, gold: 130 },
-  { upTo: 30, gold: 145 },
+  { upTo: 5, gold: 75 },
+  { upTo: 10, gold: 90 },
+  { upTo: 15, gold: 105 },
+  { upTo: 20, gold: 120 },
+  { upTo: 25, gold: 135 },
+  { upTo: 30, gold: 150 },
 ];
 
 export function waveReward(wave: number) {

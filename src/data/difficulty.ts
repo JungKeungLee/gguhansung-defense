@@ -24,8 +24,8 @@ export function regularHpMult(d: DifficultyDef, wave: number) {
 }
 
 export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
-  // 6J: 기본 체력 대비 최종 배율로 일원화 (6I의 웨이브별 증가 lateHp는 제거 — 중복 적용 없음)
-  normal: { id: 'normal', name: '보통', desc: '몬스터·보스 체력 +70% (이동속도·등장 수·골드 보상은 기본)', hpMult: 1.7, bossHpMult: 1.7, speedMult: 1, countMult: 1 },
-  // 6J 최종: 체력 ×2.3(보스 포함). 이동속도·등장 수 +10%는 6G 값 유지
-  hard: { id: 'hard', name: '어려움', desc: '몬스터·보스 체력 +130%, 등장 수 +10%, 이동속도 +10% (특수 능력·골드 보상 동일)', hpMult: 2.3, bossHpMult: 2.3, speedMult: 1.1, countMult: 1.1 },
+  // 6K: 기본 체력 대비 최종 배율 (웨이브별 추가 증가 lateHp 없음 — 중복 적용 없음)
+  normal: { id: 'normal', name: '보통', desc: '몬스터·보스 체력 ×2.5 (이동속도·등장 수·골드 보상은 기본)', hpMult: 2.5, bossHpMult: 2.5, speedMult: 1, countMult: 1 },
+  // 6K: 체력 ×3.0(보스 포함). 이동속도·등장 수 +10%는 6G 값 유지
+  hard: { id: 'hard', name: '어려움', desc: '몬스터·보스 체력 ×3.0, 등장 수 +10%, 이동속도 +10% (특수 능력·골드 보상 동일)', hpMult: 3, bossHpMult: 3, speedMult: 1.1, countMult: 1.1 },
 };

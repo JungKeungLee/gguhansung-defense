@@ -34,13 +34,24 @@ export interface SynergyDef {
 /** 5-A.5: 시너지 다수 동시 활성 시 과도한 누적 방지를 위해 하향 (기존 atk 0.2·skill 0.2·공속 0.15, 합계 상한 없음). 개별 시너지 수치(최대 8%)는 그대로 */
 export const SYNERGY_CAPS = { atk: 0.1, attackSpeed: 0.08, skill: 0.1, cooldown: 0.1, /** 공격력계+스킬·광역계 합계 상한 */ damageTotal: 0.15 };
 
-/** 등급 조건: 전원 minStar 이상 + 그중 서로 다른 멤버 highCount명이 3성 이상 */
+/**
+ * 등급 조건: 전원 minStar 이상 + 그중 서로 다른 멤버 highCount명이 3성 이상 (멤버별 전투 칸 최고 등급 1개로 판정 → 중복 계산 없음)
+ * 6K: 3인·5인 전원 3성 이상, 10인 전원 2성 이상 + 5명 3성 이상 (6J: 3인 2성+1명 3성, 5인 2성+2명 3성, 10인 전원 1성)
+ */
 export const TIER_RULES: Record<SynergyTier, { minStar: number; highCount: number }> = {
-  2: { minStar: 2, highCount: 0 },
-  3: { minStar: 2, highCount: 1 },
-  5: { minStar: 2, highCount: 2 },
-  10: { minStar: 1, highCount: 0 },
+  2: { minStar: 2, highCount: 0 }, // 6J부터 비활성 (DISABLED_TIERS)
+  3: { minStar: 3, highCount: 0 },
+  5: { minStar: 3, highCount: 0 },
+  10: { minStar: 2, highCount: 5 },
 };
+
+/** 발동 조건 설명 (패널·게임 설명 공통, TIER_RULES에서 생성) */
+export function tierRuleText(t: SynergyTier, short = false) {
+  const r = TIER_RULES[t];
+  const all = t === 10 ? (short ? '10명' : '멤버 10명 모두') : '전원';
+  if (short) return `${all} ${r.minStar}성↑${r.highCount ? ` · ${r.highCount}명 3성↑` : ''}`;
+  return `${all} ${r.minStar}성 이상${r.highCount ? ` + 그중 서로 다른 멤버 ${r.highCount}명 3성 이상` : ''}`;
+}
 
 const ALL_MEMBERS = ['yappu', 'harunotsuki', 'manjo', 'moya', 'yuntami', 'yamuji', 'nanwony', 'kkutinho', 'kimokdok', 'damyu'];
 

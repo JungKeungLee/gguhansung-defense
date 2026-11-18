@@ -6,6 +6,8 @@ import { SYNERGY_DEFS } from '../data/synergies';
 import { clearRecords, computeStats, formatTime, isCurrentVersion, loadRecords, type PlayRecord } from '../records/records';
 import { BALANCE_VERSION } from '../data/version';
 import CharAvatar from './CharAvatar';
+import victoryBg from '../assets/backgrounds/victory.webp';
+import defeatBg from '../assets/backgrounds/defeat.webp';
 
 // 이전 버전 기록에는 현재 비활성인 2인 시너지 ID가 있을 수 있어 전체 정의에서 찾음
 const synName = (id: string) => SYNERGY_DEFS.find((s) => s.id === id)?.name ?? id;
@@ -14,13 +16,14 @@ const reasonText = (r: PlayRecord) =>
   r.result === 'victory' ? '30웨이브 전체 처치' : r.defeatReason === 'timeout' ? '최종 보스 제한시간 초과' : '살아 있는 몬스터 80마리 도달';
 
 /** 게임 종료 결과 (Scene이 종료 확정 시 1회 만든 기록을 표시만 함 — 재렌더링해도 저장 없음) */
-export function ResultPanel({ hud, onRestart, onRecords }: { hud: HudState; onRestart: () => void; onRecords: () => void }) {
+export function ResultPanel({ hud, onRestart, onMain, onRecords }: { hud: HudState; onRestart: () => void; onMain: () => void; onRecords: () => void }) {
   const r = hud.result;
   const win = hud.phase === 'victory';
   // 남아 있는 유닛 중 달성 최고 등급과 같은 유닛 (판매·합성으로 없으면 등급만 표시)
   const best = r ? r.units.filter((u) => u.star === r.bestStar).sort((a, b) => b.star - a.star)[0] ?? null : null;
   return (
-    <div className="overlay result">
+    // 6K: 승리·패배 전용 배경 (위쪽 문장 영역은 비워 두고 결과 정보는 아래 반투명 패널에 표시)
+    <div className={`overlay result ${win ? 'win' : 'lose-bg'}`} style={{ backgroundImage: `url(${win ? victoryBg : defeatBg})` }}>
       <h2 className={hud.phase}>{win ? '승리!' : '패배'}</h2>
       {r ? (
         <div className="result-grid">
@@ -38,6 +41,7 @@ export function ResultPanel({ hud, onRestart, onRecords }: { hud: HudState; onRe
       {hud.recordFailed && <p className="lose small">기록 저장에 실패했습니다 (브라우저 저장소 차단).</p>}
       <div className="row">
         <button onClick={onRestart}>다시 시작</button>
+        <button onClick={onMain}>메인으로</button>
         <button onClick={onRecords}>기록 보기</button>
       </div>
     </div>

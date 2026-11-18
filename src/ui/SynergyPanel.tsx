@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import type { SynergyView } from '../game/bridge';
 import { memberById } from '../data/members';
-import { TIER_RULES, type SynergyTier } from '../data/synergies';
+import { TIER_RULES, tierRuleText, type SynergyTier } from '../data/synergies';
 
 const TIER_LABEL: Record<number, string> = { 2: '2인', 3: '3인', 5: '5인', 10: '10인' };
-const TIER_RULE: Record<number, string> = { 2: '전원 2성↑', 3: '전원 2성↑ · 1명 3성↑', 5: '전원 2성↑ · 2명 3성↑', 10: '전원 배치' };
 
 /** 달성 진행도: (조건 충족 멤버 수 + 충족한 3성 조건 수) / (멤버 수 + 필요 3성 수) */
 function progress(s: SynergyView) {
@@ -35,7 +34,7 @@ function Item({ s, open, onToggle }: { s: SynergyView; open: boolean; onToggle: 
           </div>
           {!s.active && (
             <p className="syn-need">
-              {TIER_RULE[s.tier]}
+              {tierRuleText(s.tier as SynergyTier, true)}
               {s.missing.length > 0 && ` · 부족: ${s.missing.map((id) => memberById(id).name).join(', ')}`}
               {s.needHigh > 0 && ` · 3성 ${s.needHigh}명 더`}
             </p>
@@ -63,7 +62,7 @@ export default function SynergyPanel({ list }: { list: SynergyView[] }) {
         {active.map((s) => <Item key={s.id} s={s} open={openId === s.id} onToggle={() => toggle(s.id)} />)}
         {near.length > 0 && <div className="syn-group">달성 임박</div>}
         {near.map((s) => <Item key={s.id} s={s} open={openId === s.id} onToggle={() => toggle(s.id)} />)}
-        {!active.length && !near.length && <p className="muted small">전투 칸에 2성 이상 멤버를 모으면 시너지가 활성화됩니다.</p>}
+        {!active.length && !near.length && <p className="muted small">조합 멤버를 모두 3성 이상으로 전투 칸에 배치하면 시너지가 활성화됩니다.</p>}
         <button className="syn-more" onClick={() => setShowAll(!showAll)}>{showAll ? '접기 ▴' : `나머지 ${others.length}개 보기 ▾`}</button>
         {showAll && others.map((s) => <Item key={s.id} s={s} open={openId === s.id} onToggle={() => toggle(s.id)} />)}
       </div>

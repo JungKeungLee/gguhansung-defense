@@ -475,7 +475,7 @@ export class BattleScene extends Phaser.Scene {
     for (const f of this.bfx) f.t += fxDt;
     this.bfx = this.bfx.filter((f) => f.t < BFX_DUR[f.fx.kind]);
     this.updateSkillArt(fxDt);
-    if (!this.paused && !this.waiting && !this.battle.isOver) this.realMs += delta;
+    if (!this.paused && !this.waiting && !this.battle.isOver) this.realMs += Math.min(delta, 250); // 휴면 후 첫 프레임의 긴 간격 제외
     if (this.battle.isOver && !this.recorded) this.recordResult();
     this.drawFrame();
     this.hudElapsed += delta;

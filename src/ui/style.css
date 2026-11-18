@@ -348,3 +348,56 @@ kbd { display: inline-block; min-width: 1.4em; padding: 0 4px; margin-left: 4px;
 .storage .slot.picked { box-shadow: 0 0 0 3px #ff4d5e inset, 0 0 8px rgba(255, 77, 94, 0.6); background: #3a1018; }
 .storage .pick { position: absolute; top: 1px; right: 2px; width: 15px; height: 15px; line-height: 15px; border-radius: 50%; background: var(--crimson); color: #fff; font-size: 0.68em; font-weight: 700; }
 .hint.multi-hint { color: #ff9aa6; }
+
+/* ── 6K 승리·패배 화면: 전용 배경(16:9)을 맵 영역에 꽉 채우고, 결과 정보는 문장(왕관·방패) 아래에 배치 ── */
+.overlay.result { justify-content: flex-end; gap: 10px; padding: 0 12px 3.5%; background-color: #120818; background-size: cover; background-position: center top; }
+.overlay.result::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(10, 4, 16, 0) 30%, rgba(10, 4, 16, 0.55) 62%, rgba(10, 4, 16, 0.82) 100%); }
+.overlay.result { isolation: isolate; }
+.overlay.result h2 { font-size: 3em; line-height: 1; letter-spacing: 4px; text-shadow: 0 3px 0 #1a0a20, 0 0 18px rgba(0, 0, 0, 0.85); }
+.overlay.result h2.victory { color: #ffe27a; }
+.overlay.result h2.defeat { color: #ff6a7a; }
+.overlay.result .result-grid { background: rgba(18, 8, 26, 0.86); border-color: var(--gold); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55); backdrop-filter: blur(2px); }
+.overlay.result.lose-bg .result-grid { border-color: #c8102e; }
+.overlay.result .result-grid b { text-shadow: 0 1px 2px #000; }
+.overlay.result .row button { background: rgba(42, 18, 25, 0.92); }
+@media (max-width: 1599px), (max-height: 899px) {
+  .overlay.result { gap: 7px; padding-bottom: 2.5%; }
+  .overlay.result h2 { font-size: 2.4em; }
+  .overlay.result .result-grid { row-gap: 2px; padding: 8px 14px; }
+}
+
+/* ── 6K 메인 페이지·난이도 선택 공통 배경 (전투 화면 위 전체 화면 레이어) ── */
+.main-screen {
+  position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background-color: #120818; background-size: cover; background-position: center; background-repeat: no-repeat; isolation: isolate;
+}
+.main-screen::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 60% 55% at 50% 58%, rgba(18, 8, 30, 0.45), rgba(18, 8, 30, 0) 75%), linear-gradient(180deg, rgba(12, 5, 22, 0.35), rgba(12, 5, 22, 0) 30%, rgba(12, 5, 22, 0) 70%, rgba(12, 5, 22, 0.45)); }
+.main-ver { position: absolute; right: 14px; bottom: 10px; font-size: 0.8em; color: #e8dcff; padding: 2px 10px; border-radius: 10px; background: rgba(20, 8, 32, 0.6); border: 1px solid rgba(212, 175, 55, 0.4); }
+.main-menu {
+  margin-top: 8vh; width: min(520px, 100%); display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 26px 34px 28px; text-align: center;
+  background: linear-gradient(180deg, rgba(43, 23, 69, 0.82), rgba(26, 13, 42, 0.88)); border: 2px solid var(--gold); border-radius: 18px;
+  box-shadow: 0 0 0 5px rgba(26, 13, 42, 0.55), 0 0 40px rgba(140, 90, 220, 0.45), 0 18px 50px rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px);
+}
+.mm-kicker { font-size: 0.85em; letter-spacing: 4px; color: #d8c2ff; }
+.mm-title {
+  font-size: 3.6em; line-height: 1.05; letter-spacing: 3px; font-weight: 900;
+  background: linear-gradient(180deg, #fff6c8 0%, #ffd54a 45%, #d49a1c 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 3px 0 #3a1a5c) drop-shadow(0 0 14px rgba(255, 210, 90, 0.45));
+}
+.mm-sub { font-size: 0.92em; color: #e6dbf7; line-height: 1.45; }
+.mm-buttons { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.mm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.main-menu button { height: 48px; font-size: 1.05em; border-radius: 10px; background: linear-gradient(180deg, #3a2160, #24133a); border: 2px solid #8f7ac0; color: #f3e9ff; }
+.main-menu button:hover { background: linear-gradient(180deg, #4a2a78, #2c1748); border-color: var(--gold); box-shadow: 0 0 14px rgba(212, 175, 55, 0.45); }
+.main-menu button.mm-start { height: 60px; font-size: 1.35em; letter-spacing: 2px; color: #2a1238; border-color: #fff0b0; background: linear-gradient(180deg, #ffe58a, #e0a92a); box-shadow: 0 4px 0 #8a5a10, 0 0 22px rgba(255, 210, 90, 0.5); }
+.main-menu button.mm-start:hover { background: linear-gradient(180deg, #fff0b0, #f0b83a); }
+/* 난이도 선택: 메인 배경 위에 기존 모달 재사용 (어두운 막은 얇게) */
+.main-screen .diff-select { background: radial-gradient(ellipse at center, rgba(30, 10, 48, 0.55), rgba(8, 3, 12, 0.35)); }
+.dm-back { align-self: center; margin-top: 2px; height: 32px; padding: 0 16px; font-size: 0.85em; background: rgba(20, 8, 32, 0.7); border-color: rgba(201, 168, 255, 0.5); color: #e0d0ff; }
+@media (max-width: 1599px), (max-height: 899px) {
+  .main-menu { padding: 18px 26px 20px; gap: 8px; margin-top: 6vh; }
+  .mm-title { font-size: 2.9em; }
+  .main-menu button { height: 42px; }
+  .main-menu button.mm-start { height: 52px; font-size: 1.25em; }
+}

@@ -10,6 +10,7 @@ import UpgradePanel from './UpgradePanel';
 import CharAvatar from './CharAvatar';
 import { RecordsModal, ResultPanel } from './Records';
 import GuideModal from './GuideModal';
+import { MainMenu, MainScreen } from './MainScreen';
 import { formatTime } from '../records/records';
 import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
 
@@ -102,16 +103,16 @@ const DIFF_INFO: Record<DifficultyId, { tag: string; badge?: string; points: str
   normal: {
     tag: '처음 플레이 · 규칙과 조합을 익히기 좋음',
     badge: '추천',
-    points: ['몬스터·보스 체력 +70%', '이동속도·등장 수는 기본', '골드 보상은 어려움과 동일'],
+    points: ['몬스터·보스 체력 ×2.5', '이동속도·등장 수는 기본', '골드 보상은 어려움과 동일'],
   },
   hard: {
     tag: '숙련자용 · 배치·합성·강화가 모두 중요',
-    points: ['몬스터·보스 체력 +130%', '등장 수 +10% · 이동속도 +10%', '특수 능력·골드 보상은 보통과 동일'],
+    points: ['몬스터·보스 체력 ×3.0', '등장 수 +10% · 이동속도 +10%', '특수 능력·골드 보상은 보통과 동일'],
   },
 };
 
 /** 전투 대기 화면: 난이도 선택 모달 (선택 전에는 전투 조작 불가 — 하단 버튼은 started 전 비활성) */
-function DifficultyModal({ onPick }: { onPick: (d: DifficultyId) => void }) {
+function DifficultyModal({ onPick, onBack }: { onPick: (d: DifficultyId) => void; onBack: () => void }) {
   return (
     <div className="overlay diff-select">
       <div className="diff-modal" role="dialog" aria-labelledby="diff-title">
@@ -138,6 +139,7 @@ function DifficultyModal({ onPick }: { onPick: (d: DifficultyId) => void }) {
         <div className="dm-foot">
           <span>30웨이브</span><span>몬스터 80마리 도달 시 패배</span><span>최종 보스 180초 제한</span>
           <p>진행 중에는 난이도를 바꿀 수 없으며, 재시작하면 다시 선택합니다.</p>
+          <button className="dm-back" onClick={onBack}>← 메인으로</button>
         </div>
       </div>
     </div>
@@ -152,6 +154,20 @@ export default function App() {
   const [confirmMulti, setConfirmMulti] = useState<{ ids: number[]; total: number } | null>(null);
   const [showRecords, setShowRecords] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  /** 화면 흐름: 메인 → 난이도 선택 → 전투(승리·패배 포함). 라우터 없이 상태로 전환 */
+  const [screen, setScreen] = useState<'main' | 'select' | 'battle'>('main');
+  /** 난이도 선택(대기 상태)으로: 진행 중인 전투를 초기화하고 게임 시간 정지 */
+  const toSelect = () => { ctl()?.restart(); setScreen('select'); };
+  const toMain = () => { ctl()?.restart(); setScreen('main'); };
+  // 메인·선택 화면일 때 뒤에 깔린 전투 화면은 포커스·클릭·화면낭독 대상에서 제외 (inert)
+  useEffect(() => {
+    for (const el of document.querySelectorAll<HTMLElement>('.app > .topbar, .app > .middle, .app > .controls')) {
+      if (screen === 'battle') el.removeAttribute('inert');
+      else el.setAttribute('inert', '');
+    }
+  }, [screen]);
+  // 전투 화면인데 시작 전 상태면(예: 씬 준비 전 시작 시도) 난이도 선택으로 되돌림
+  useEffect(() => { if (screen === 'battle' && hud && !hud.started) setScreen('select'); }, [screen, hud?.started]);
   const ctl = () => gameControls.current;
   const danger = hud ? hud.alive / hud.maxAlive : 0;
   const over = !!hud && (hud.phase === 'victory' || hud.phase === 'defeat');
@@ -235,9 +251,16 @@ export default function App() {
         <div className="menu-btns">
           <button onClick={() => setShowGuide(true)}>게임 설명</button>
           <button onClick={() => setShowRecords(true)}>기록</button>
-          <button onClick={() => ctl()?.restart()} title="현재 게임을 끝내고 난이도 선택으로">재시작</button>
+          <button onClick={toSelect} title="현재 게임을 끝내고 난이도 선택으로">재시작</button>
         </div>
       </header>
+      {screen !== 'battle' && (
+        <MainScreen>
+          {screen === 'main'
+            ? <MainMenu onStart={() => setScreen('select')} onGuide={() => setShowGuide(true)} onRecords={() => setShowRecords(true)} />
+            : <DifficultyModal onPick={(d) => { ctl()?.start(d); setScreen('battle'); }} onBack={() => setScreen('main')} />}
+        </MainScreen>
+      )}
       {showRecords && <RecordsModal onClose={() => setShowRecords(false)} />}
       {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
 
@@ -248,9 +271,8 @@ export default function App() {
         </div>
         <div className="map">
           <div className="syn-badge">시너지 {hud?.synergies.filter((s) => s.active).length ?? 0}</div>
-          <GameCanvas />
+          <GameCanvas active={screen === 'battle'} />
           <Toast hud={hud} />
-          {hud && !hud.started && <DifficultyModal onPick={(d) => ctl()?.start(d)} />}
           {!!hud?.bosses.length && (
             <div className={`bossbars n${hud.bosses.length}`}>
               {hud.bosses.map((b) => (
@@ -269,7 +291,7 @@ export default function App() {
               ))}
             </div>
           )}
-          {over && <ResultPanel hud={hud!} onRestart={() => ctl()?.restart()} onRecords={() => setShowRecords(true)} />}
+          {over && <ResultPanel hud={hud!} onRestart={toSelect} onMain={toMain} onRecords={() => setShowRecords(true)} />}
           {confirmMulti && (
             <div className="overlay">
               <h3>일괄 판매 확인</h3>

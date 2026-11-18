@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MEMBERS, memberById } from '../data/members';
 import { MERGE_COUNT, SELL_PRICE, STAR_DAMAGE_MULT, STAR_SKILL_DAMAGE_BONUS, unitStats } from '../data/units';
-import { DISABLED_TIERS, SYNERGIES, SYNERGY_CAPS, TIER_RULES, isTierEnabled } from '../data/synergies';
+import { DISABLED_TIERS, SYNERGIES, SYNERGY_CAPS, isTierEnabled, tierRuleText } from '../data/synergies';
 import { UPGRADES, UPGRADE_IDS, UPGRADE_MAX } from '../data/upgrades';
 import { DIFFICULTIES } from '../data/difficulty';
 import { FOCUS_COST, FOCUS_RATE, FOCUS_UNLOCK_WAVE, START_GOLD, SUMMON_COST } from '../data/economy';
@@ -13,10 +13,7 @@ type Tab = 'rules' | 'merge' | 'members' | 'synergy' | 'upgrade';
 const TABS: [Tab, string][] = [['rules', '기본 규칙'], ['merge', '합성법'], ['members', '멤버·스킬'], ['synergy', '시너지 조합'], ['upgrade', '강화·난이도']];
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
-const TIER_TEXT = (t: 2 | 3 | 5 | 10) => {
-  const r = TIER_RULES[t];
-  return t === 10 ? '멤버 10명 모두 전투 칸에 배치 (1성 이상)' : `전원 ${r.minStar}성 이상${r.highCount ? ` + 서로 다른 멤버 ${r.highCount}명 3성 이상` : ''}`;
-};
+const TIER_TEXT = (t: 2 | 3 | 5 | 10) => tierRuleText(t);
 
 export default function GuideModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('rules');
