@@ -4,6 +4,10 @@ import type { UpgradeId } from '../data/upgrades';
 import type { DifficultyId } from '../data/difficulty';
 import type { PlayRecord } from '../records/records';
 
+/** 게임 배속: 6J부터 2배속(기본)·3배속 */
+export type GameSpeed = 2 | 3;
+export const DEFAULT_SPEED: GameSpeed = 2;
+
 export interface UpgradeView {
   id: UpgradeId;
   name: string;
@@ -104,7 +108,8 @@ export interface HudState {
   /** 종료 확정 시 저장된 결과 (재렌더링과 무관하게 Scene에서 1회 생성·저장) */
   result: PlayRecord | null;
   recordFailed: boolean;
-  speed: 1 | 2;
+  /** 게임 배속 (6J: 2·3배속, 기본 2배속) */
+  speed: GameSpeed;
   paused: boolean;
   kills: number;
   gold: number;
@@ -122,7 +127,7 @@ export interface HudState {
 }
 
 export interface GameControls {
-  setSpeed(speed: 1 | 2): void;
+  setSpeed(speed: GameSpeed): void;
   togglePause(): void;
   restart(): void;
   clickSlot(area: Area, index: number): void;

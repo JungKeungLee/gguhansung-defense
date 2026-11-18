@@ -20,7 +20,7 @@ import {
   FAIL_TEXT, isFocusUnlocked, mergeAll, mergeWith, mergeableIds, moveUnit, sell, sellMany, sellPrice, summon, toggleLock,
   type ActionResult,
 } from './army';
-import { gameControls, hudStore, type BossView, type HudMessage, type UnitView } from './bridge';
+import { DEFAULT_SPEED, gameControls, hudStore, type BossView, type GameSpeed, type HudMessage, type UnitView } from './bridge';
 import { FIELD_SLOTS, GRID, MAP_H, MAP_IMAGE, MAP_SCALE, MAP_W, PATH_LENGTH, STORAGE_SLOTS, cellAt, cellCenter, pathPoint, pathWithinRange } from './layout';
 import battleMapUrl from '../assets/maps/battle-map.webp';
 
@@ -54,7 +54,7 @@ const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
 export class BattleScene extends Phaser.Scene {
   private battle!: Battle;
-  private speed: 1 | 2 = 1;
+  private speed: GameSpeed = DEFAULT_SPEED;
   private paused = false;
   private selectedId: number | null = null;
   private fx: HitFx[] = [];
@@ -313,7 +313,7 @@ export class BattleScene extends Phaser.Scene {
     this.bfx = [];
     this.selectedId = null;
     this.paused = false;
-    this.speed = 1;
+    this.speed = DEFAULT_SPEED;
     this.autoMerge = false;
     this.moveMode = false;
     this.multiSell = false;
@@ -464,7 +464,10 @@ export class BattleScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     const dt = Math.min(delta / 1000, 0.1);
     const running = !this.paused && !this.waiting;
-    if (running) this.battle.step(dt * this.speed);
+    if (running) { // 배속 적용: 전투 계산은 최대 0.1초 단위로 나눠 진행 (3배속에서도 1배속과 같은 판정 간격)
+      const total = dt * this.speed, n = Math.ceil(total / 0.1);
+      for (let i = 0; i < n && !this.battle.isOver; i++) this.battle.step(total / n);
+    }
     // 표시 연출은 일시정지 중에도 실제 시간으로 마저 끝냄 (보스 등장 고리 등이 멈춘 채 남지 않도록)
     const fxDt = running ? dt * this.speed : dt;
     for (const f of this.fx) f.t += fxDt;

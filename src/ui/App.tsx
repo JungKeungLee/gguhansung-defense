@@ -102,11 +102,11 @@ const DIFF_INFO: Record<DifficultyId, { tag: string; badge?: string; points: str
   normal: {
     tag: '처음 플레이 · 규칙과 조합을 익히기 좋음',
     badge: '추천',
-    points: ['1~10웨이브: 기본 체력', '11웨이브부터 일반 몬스터 체력 웨이브당 +2% (30웨이브 +40%)', '보스 체력 +35%'],
+    points: ['몬스터·보스 체력 +70%', '이동속도·등장 수는 기본', '골드 보상은 어려움과 동일'],
   },
   hard: {
     tag: '숙련자용 · 배치·합성·강화가 모두 중요',
-    points: ['몬스터·보스 체력 +50%', '등장 수 +10% · 이동속도 +10%', '특수 능력·골드 보상은 보통과 동일'],
+    points: ['몬스터·보스 체력 +130%', '등장 수 +10% · 이동속도 +10%', '특수 능력·골드 보상은 보통과 동일'],
   },
 };
 
@@ -188,7 +188,7 @@ export default function App() {
         KeyE: () => c.mergeAll(),
         KeyA: () => c.toggleAutoMerge(),
         Space: () => c.togglePause(),
-        KeyF: () => c.setSpeed(h.speed === 1 ? 2 : 1),
+        KeyF: () => c.setSpeed(h.speed === 2 ? 3 : 2),
         Escape: () => { if (h.moveMode) c.toggleMoveMode(); else if (h.multiSell.on) c.toggleMultiSell(); },
       };
       if (!act[k]) return;
@@ -338,8 +338,8 @@ export default function App() {
       <DragLayer />
       <footer className="controls">
         <div className="group">
-          <button className={`speed ${hud?.speed === 2 ? 'on' : ''}`} onClick={() => ctl()?.setSpeed(hud?.speed === 2 ? 1 : 2)} disabled={!playing}>
-            {hud?.speed === 2 ? '2배속' : '1배속'} <Kbd k="F" />
+          <button className={`speed ${hud?.speed === 3 ? 'on' : ''}`} onClick={() => ctl()?.setSpeed(hud?.speed === 3 ? 2 : 3)} disabled={!playing} title="2배속 ↔ 3배속 전환">
+            {hud?.speed ?? 2}배속 <Kbd k="F" />
           </button>
           <button className={hud?.paused ? 'on' : ''} onClick={() => ctl()?.togglePause()} disabled={!playing}>
             {hud?.paused ? '계속' : '일시정지'} <Kbd k="Space" />

@@ -2,13 +2,14 @@ import { useState } from 'react';
 import type { HudState } from '../game/bridge';
 import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
 import { memberById } from '../data/members';
-import { SYNERGIES } from '../data/synergies';
+import { SYNERGY_DEFS } from '../data/synergies';
 import { clearRecords, computeStats, formatTime, isCurrentVersion, loadRecords, type PlayRecord } from '../records/records';
 import { BALANCE_VERSION } from '../data/version';
 import CharAvatar from './CharAvatar';
 
-const synName = (id: string) => SYNERGIES.find((s) => s.id === id)?.name ?? id;
-const TIER_ORDER = (id: string) => -(SYNERGIES.find((s) => s.id === id)?.tier ?? 0);
+// 이전 버전 기록에는 현재 비활성인 2인 시너지 ID가 있을 수 있어 전체 정의에서 찾음
+const synName = (id: string) => SYNERGY_DEFS.find((s) => s.id === id)?.name ?? id;
+const TIER_ORDER = (id: string) => -(SYNERGY_DEFS.find((s) => s.id === id)?.tier ?? 0);
 const reasonText = (r: PlayRecord) =>
   r.result === 'victory' ? '30웨이브 전체 처치' : r.defeatReason === 'timeout' ? '최종 보스 제한시간 초과' : '살아 있는 몬스터 80마리 도달';
 

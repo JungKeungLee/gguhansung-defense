@@ -24,12 +24,8 @@ export function regularHpMult(d: DifficultyDef, wave: number) {
 }
 
 export const DIFFICULTIES: Record<DifficultyId, DifficultyDef> = {
-  // 6-I: 무작위 플레이 쉬운 클리어 완화 — 1~10웨이브는 그대로, 11웨이브부터 일반 몬스터 체력 웨이브당 +2%(30웨이브 ×1.4), 보스 체력 ×1.35
-  //      (어려움보다 낮게 유지: 어려움은 전 구간 ×1.5·등장 수·이동속도 +10%)
-  normal: {
-    id: 'normal', name: '보통', desc: '1~10웨이브 기본 체력, 11웨이브부터 일반 몬스터 체력이 웨이브마다 2%씩 증가(30웨이브 +40%), 보스 체력 +35%',
-    hpMult: 1, bossHpMult: 1.35, speedMult: 1, countMult: 1, lateHp: { fromWave: 10, perWave: 0.02 },
-  },
-  // 6-G 승인: 체력 +50%(보스 포함)·등장 수 +10%·이동속도 +10% (5-B: 1.4배·등장 수 1.0)
-  hard: { id: 'hard', name: '어려움', desc: '몬스터·보스 체력 +50%, 등장 수 +10%, 이동속도 +10% (특수 능력·골드 보상 동일)', hpMult: 1.5, bossHpMult: 1.5, speedMult: 1.1, countMult: 1.1 },
+  // 6J: 기본 체력 대비 최종 배율로 일원화 (6I의 웨이브별 증가 lateHp는 제거 — 중복 적용 없음)
+  normal: { id: 'normal', name: '보통', desc: '몬스터·보스 체력 +70% (이동속도·등장 수·골드 보상은 기본)', hpMult: 1.7, bossHpMult: 1.7, speedMult: 1, countMult: 1 },
+  // 6J 최종: 체력 ×2.3(보스 포함). 이동속도·등장 수 +10%는 6G 값 유지
+  hard: { id: 'hard', name: '어려움', desc: '몬스터·보스 체력 +130%, 등장 수 +10%, 이동속도 +10% (특수 능력·골드 보상 동일)', hpMult: 2.3, bossHpMult: 2.3, speedMult: 1.1, countMult: 1.1 },
 };

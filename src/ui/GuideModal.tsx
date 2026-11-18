@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { MEMBERS, memberById } from '../data/members';
 import { MERGE_COUNT, SELL_PRICE, STAR_DAMAGE_MULT, STAR_SKILL_DAMAGE_BONUS, unitStats } from '../data/units';
-import { SYNERGIES, SYNERGY_CAPS, TIER_RULES } from '../data/synergies';
+import { DISABLED_TIERS, SYNERGIES, SYNERGY_CAPS, TIER_RULES, isTierEnabled } from '../data/synergies';
 import { UPGRADES, UPGRADE_IDS, UPGRADE_MAX } from '../data/upgrades';
 import { DIFFICULTIES } from '../data/difficulty';
 import { FOCUS_COST, FOCUS_RATE, FOCUS_UNLOCK_WAVE, START_GOLD, SUMMON_COST } from '../data/economy';
@@ -48,6 +48,7 @@ export default function GuideModal({ onClose }: { onClose: () => void }) {
               </ul>
               <h4>진행 방법</h4>
               <ul>
+                <li>게임은 <b>기본 2배속</b>으로 진행되며 [배속] 버튼 또는 <b>F키</b>로 2배속 ↔ 3배속을 바꿉니다. 웨이브·이동·공격·스킬 쿨타임 모두 같은 배속이 적용되고, 최종 보스 제한시간 180초는 게임 시간 기준입니다.</li>
                 <li>시작 골드 {START_GOLD}G. 몬스터 처치·웨이브 출현 완료 시 골드를 얻습니다.</li>
                 <li><b>일반 소환 {SUMMON_COST}G</b>: 10명 중 무작위 1성. <b>집중 소환 {FOCUS_COST}G</b>({FOCUS_UNLOCK_WAVE}웨이브부터): 고른 멤버 {pct(FOCUS_RATE)} 확률.</li>
                 <li>소환된 유닛은 전투 칸(20칸)에 먼저, 가득 차면 보관함(20칸)에 들어갑니다. <b>보관함 유닛은 공격하지 않습니다.</b></li>
@@ -105,7 +106,8 @@ export default function GuideModal({ onClose }: { onClose: () => void }) {
             <>
               <h4>발동 조건 (전투 칸 기준, 같은 멤버가 여럿이면 최고 등급으로 판정)</h4>
               <ul>
-                {([2, 3, 5, 10] as const).map((t) => <li key={t}><b>{t}인</b>: {TIER_TEXT(t)}</li>)}
+                {([2, 3, 5, 10] as const).filter(isTierEnabled).map((t) => <li key={t}><b>{t}인</b>: {TIER_TEXT(t)}</li>)}
+                {DISABLED_TIERS.length > 0 && <li className="muted">{DISABLED_TIERS.map((t) => `${t}인`).join('·')} 시너지는 현재 버전에서 비활성입니다.</li>}
                 <li>여러 시너지를 동시에 발동할 수 있으며, 한 멤버가 여러 조합에 동시에 참여할 수 있습니다.</li>
                 <li>보너스 합산 상한: 공격력 계열 +{pct(SYNERGY_CAPS.atk)}, 스킬·광역 계열 +{pct(SYNERGY_CAPS.skill)}, 둘의 합계 +{pct(SYNERGY_CAPS.damageTotal)}, 공격속도 +{pct(SYNERGY_CAPS.attackSpeed)}, 쿨타임 감소 {pct(SYNERGY_CAPS.cooldown)}</li>
               </ul>

@@ -44,8 +44,15 @@ export const TIER_RULES: Record<SynergyTier, { minStar: number; highCount: numbe
 
 const ALL_MEMBERS = ['yappu', 'harunotsuki', 'manjo', 'moya', 'yuntami', 'yamuji', 'nanwony', 'kkutinho', 'kimokdok', 'damyu'];
 
-// 초기 밸런스 값 — 추후 조정
-export const SYNERGIES: SynergyDef[] = [
+/**
+ * 6J: 비활성 발동 단계. 2인 시너지는 무작위 배치만으로 대부분 켜져 전략 차이를 줄여서 비활성화.
+ * 정의(SYNERGY_DEFS)는 그대로 두므로 이 목록에서 2를 빼면 원래대로 복원됨.
+ */
+export const DISABLED_TIERS: SynergyTier[] = [2];
+export const isTierEnabled = (t: SynergyTier) => !DISABLED_TIERS.includes(t);
+
+/** 전체 시너지 정의 (비활성 단계 포함, 기존 기록의 이름 표시용으로도 사용) */
+export const SYNERGY_DEFS: SynergyDef[] = [
   // ── 2인 ──
   { id: 'frostRapid', name: '빙결 연사', tier: 2, members: ['yappu', 'harunotsuki'], desc: '야뿌 기본 공격에 10% 확률로 1.5초 15% 감속',
     effects: [{ kind: 'procSlow', who: ['yappu'], chance: 0.1, slow: 0.15, duration: 1.5 }] },
@@ -85,3 +92,6 @@ export const SYNERGIES: SynergyDef[] = [
   { id: 'fullSquad', name: '꾸한성 완전체', tier: 10, members: ALL_MEMBERS, desc: '전투 유닛 전체 공격력 +5%, 스킬 피해 +5%',
     effects: [{ kind: 'damage', bucket: 'atk', amount: 0.05, all: true }, { kind: 'damage', bucket: 'skill', amount: 0.05, all: true, skillOnly: true }] },
 ];
+
+/** 실제 판정·효과·UI에 쓰는 활성 시너지 (비활성 단계 제외) */
+export const SYNERGIES: SynergyDef[] = SYNERGY_DEFS.filter((d) => isTierEnabled(d.tier));
