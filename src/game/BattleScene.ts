@@ -17,7 +17,7 @@ import { waveSpawnList } from '../data/waves';
 import { saveRecord, type PlayRecord } from '../records/records';
 import { buildRecord } from '../records/buildRecord';
 import {
-  FAIL_TEXT, isFocusUnlocked, mergeAll, mergeWith, mergeableIds, moveUnit, sell, sellPrice, summon, toggleLock,
+  FAIL_TEXT, isFocusUnlocked, mergeAll, mergeWith, mergeableIds, moveUnit, sell, sellMany, sellPrice, summon, toggleLock,
   type ActionResult,
 } from './army';
 import { gameControls, hudStore, type BossView, type HudMessage, type UnitView } from './bridge';
@@ -48,6 +48,8 @@ function poly(x: number, y: number, r: number, sides: number, rot = -Math.PI / 2
 }
 const SHAPE_SIDES = { triangle: 3, square: 4, diamond: 4, hex: 6 } as const;
 const stars = (n: number) => '★'.repeat(n);
+/** 칸 중심 기준 하단 정보 띠(별·이름) 세로 위치 — 칸 높이 약 81px, 아래 끝에서 약 13px 위 (잠금 점선 테두리와 겹치지 않게) */
+const INFO_Y = GRID.cellH / 2 - 13;
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
 export class BattleScene extends Phaser.Scene {
@@ -61,6 +63,9 @@ export class BattleScene extends Phaser.Scene {
   private hudElapsed = 0;
   private autoMerge = false;
   private moveMode = false;
+  /** 다중 판매 모드: 클릭 = 선택/해제, 드래그·이동·수동 합성·잠금 비활성 */
+  private multiSell = false;
+  private picked = new Set<number>();
   /** 드래그 중 유닛 ID. 이동은 endDrag → moveUnit 한 경로로만 처리 */
   private dragId: number | null = null;
   /** 난이도 선택 대기 중 (전투 진행 없음) */
@@ -89,6 +94,8 @@ export class BattleScene extends Phaser.Scene {
   private top!: Phaser.GameObjects.Graphics;
   /** 유닛 위 표식(잠금·합성 가능) — 캐릭터 이미지보다 위 */
   private ov!: Phaser.GameObjects.Graphics;
+  /** 칸 하단 정보 띠(별·이름 배경) — 캐릭터(1) 위, 글자(2) 아래 */
+  private infoG!: Phaser.GameObjects.Graphics;
   private press: { id: number; x: number; y: number } | null = null;
   private message: HudMessage | null = null;
   private msgSeq = 0;
@@ -210,6 +217,7 @@ export class BattleScene extends Phaser.Scene {
     this.createCells();
     this.g = this.add.graphics();
     this.ov = this.add.graphics().setDepth(3);
+    this.infoG = this.add.graphics().setDepth(1.9);
     this.top = this.add.graphics().setDepth(1.6); // 깊이: 맵·칸·g(0) < 몬스터(0.5~0.55) < 캐릭터(1) < 체력바·투사체(1.6) < 별·이름(2) < 표식(3)
     this.resetBattle();
     gameControls.current = {
@@ -226,10 +234,12 @@ export class BattleScene extends Phaser.Scene {
       clickSlot: (area, index) => this.clickSlot(area, index),
       summon: (focusId) => { if (this.idle()) this.doSummon(focusId); },
       mergeSelected: () => {
-        if (this.selectedId !== null && this.idle()) this.applyMerge(mergeWith(this.battle, this.selectedId));
+        if (this.selectedId !== null && this.idle() && !this.multiSell) this.applyMerge(mergeWith(this.battle, this.selectedId));
       },
       mergeAll: () => {
-        if (this.idle() && !this.runMergeAll().length) this.notify('합성 가능한 유닛이 없습니다', 'error');
+        if (!this.idle()) return;
+        if (this.multiSell) return this.notify('다중 판매 모드에서는 수동 합성을 할 수 없습니다 (모드를 끄고 사용)', 'error');
+        if (!this.runMergeAll().length) this.notify('합성 가능한 유닛이 없습니다', 'error');
       },
       toggleAutoMerge: () => {
         if (!this.idle()) return;
@@ -238,13 +248,13 @@ export class BattleScene extends Phaser.Scene {
         this.publish();
       },
       toggleLock: () => {
-        if (this.selectedId === null || !this.idle()) return;
+        if (this.selectedId === null || !this.idle() || this.multiSell) return;
         const r = toggleLock(this.battle, this.selectedId);
         if (r.ok) this.notify(r.value ? '잠금: 합성·판매에서 제외됩니다' : '잠금 해제', 'info');
         else this.notify(FAIL_TEXT[r.reason], 'error');
       },
       toggleMoveMode: () => {
-        if (this.selectedId === null || this.battle.isOver || !this.idle()) return;
+        if (this.selectedId === null || this.battle.isOver || !this.idle() || this.multiSell) return;
         this.moveMode = !this.moveMode;
         this.publish();
       },
@@ -255,6 +265,24 @@ export class BattleScene extends Phaser.Scene {
         if (!r.ok) return this.notify(FAIL_TEXT[r.reason], 'error');
         if (this.selectedId === id) { this.selectedId = null; this.moveMode = false; }
         this.notify(`판매: ${memberById(u!.memberId).name} ${stars(u!.star)}  +${r.value}G`, 'good');
+      },
+      toggleMultiSell: () => {
+        if (!this.idle() || this.battle.isOver) return;
+        this.multiSell = !this.multiSell;
+        this.picked.clear();
+        this.selectedId = null;
+        this.moveMode = false;
+        this.press = null;
+        if (this.multiSell) this.notify('다중 판매: 판매할 유닛을 클릭해 선택하세요 (잠금 유닛 제외)', 'info');
+        else this.publish();
+      },
+      clearMultiSell: () => { this.picked.clear(); this.publish(); },
+      sellMany: (ids) => {
+        if (!this.idle() || !this.multiSell) return;
+        const r = sellMany(this.battle, ids); // 실행 직전 재검증: 사라졌거나 잠긴 유닛은 건너뜀
+        this.picked.clear();
+        if (!r.sold) return this.notify('판매할 수 있는 유닛이 없습니다 (상태가 바뀌었거나 잠금됨)', 'error');
+        this.notify(`일괄 판매: ${r.sold}개  +${r.gold.toLocaleString()}G${r.skipped ? ` (상태가 바뀐 ${r.skipped}개 제외)` : ''}`, 'good');
       },
       beginDrag: (id) => this.beginDrag(id),
       endDrag: (target) => this.endDrag(target),
@@ -268,6 +296,7 @@ export class BattleScene extends Phaser.Scene {
     });
     this.input.on('pointerup', () => { this.press = null; });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => { gameControls.current = null; });
+    if (import.meta.env.DEV) (window as unknown as { __scene?: BattleScene }).__scene = this; // 개발 서버 테스트용 (배포 빌드에서 제거)
   }
 
   private resetBattle(difficulty: DifficultyId = 'normal') {
@@ -287,6 +316,8 @@ export class BattleScene extends Phaser.Scene {
     this.speed = 1;
     this.autoMerge = false;
     this.moveMode = false;
+    this.multiSell = false;
+    this.picked.clear();
     this.message = null;
     this.dragId = null;
     this.press = null;
@@ -328,12 +359,11 @@ export class BattleScene extends Phaser.Scene {
           const wasMove = this.moveMode;
           this.clickSlot('field', row * GRID.cols + col);
           const u = this.battle.unitAtSlot('field', row * GRID.cols + col);
-          this.press = u && !wasMove && !this.battle.isOver ? { id: u.id, x: p.x, y: p.y } : null;
+          this.press = u && !wasMove && !this.battle.isOver && !this.multiSell ? { id: u.id, x: p.x, y: p.y } : null;
         });
-        // 글자는 이미지 위에 겹칠 수 있어 외곽선으로 가독성 확보
-        // 별: 칸 위쪽 안, 이름: 칸 아래쪽 안 (칸 높이 약 81px)
-        this.starTexts.push(this.add.text(x, y - GRID.cellH / 2 + 7, '', { ...style, fontSize: '13px', color: '#ffd84a', stroke: '#140a0d', strokeThickness: 4 }).setOrigin(0.5).setDepth(2));
-        this.nameTexts.push(this.add.text(x, y + GRID.cellH / 2 - 8, '', { ...style, fontSize: '13px', color: '#ffffff', stroke: '#140a0d', strokeThickness: 4 }).setOrigin(0.5).setDepth(2));
+        // 별·이름: 칸 하단 정보 띠에 한 줄로 [★★★ 이름] (얼굴·머리를 가리지 않도록). 위치는 drawFrame에서 글자 폭에 맞춰 가운데 정렬
+        this.starTexts.push(this.add.text(x, y + INFO_Y, '', { ...style, fontSize: '11px', color: '#ffd84a', stroke: '#140a0d', strokeThickness: 3 }).setOrigin(0, 0.5).setDepth(2));
+        this.nameTexts.push(this.add.text(x, y + INFO_Y, '', { ...style, fontSize: '12px', color: '#ffffff', stroke: '#140a0d', strokeThickness: 3 }).setOrigin(0, 0.5).setDepth(2));
         this.unitImgs.push(this.add.image(x, y, '__DEFAULT').setVisible(false).setDepth(1));
       }
     }
@@ -341,6 +371,14 @@ export class BattleScene extends Phaser.Scene {
 
   /** 전투 칸·보관함 공통 클릭: 이동 모드면 이동/교환, 아니면 선택 */
   private clickSlot(area: Area, index: number) {
+    if (this.multiSell) {
+      const u = this.battle.unitAtSlot(area, index);
+      if (!u || this.battle.isOver || this.waiting) return;
+      if (u.locked) return this.notify('잠금된 유닛은 일괄 판매에서 제외됩니다', 'error');
+      if (this.picked.has(u.id)) this.picked.delete(u.id);
+      else this.picked.add(u.id);
+      return this.publish();
+    }
     const sel = this.selectedUnit();
     if (this.moveMode && sel) {
       this.moveMode = false;
@@ -358,7 +396,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private beginDrag(id: number) {
-    if (this.battle.isOver || this.waiting || !this.battle.units.some((u) => u.id === id)) return;
+    if (this.battle.isOver || this.waiting || this.multiSell || !this.battle.units.some((u) => u.id === id)) return;
     this.dragId = id;
     this.selectedId = id; // 드래그 시작 시 유닛 정보 표시
     this.moveMode = false;
@@ -502,9 +540,10 @@ export class BattleScene extends Phaser.Scene {
       }
       if (u.buffs.length) g.lineStyle(2, 0x6fffe0, pulse).strokeCircle(u.x, u.y, 31); // 공격속도 강화 중
       const cw = GRID.cellW, ch = GRID.cellH, left = u.x - cw / 2, top = u.y - ch / 2;
-      if (this.mergeable.has(u.id)) { // 합성 가능: 좌하단 초록 ▲ 배지
-        ov.fillStyle(0x0b2a12, 0.9).fillCircle(left + 13, top + ch - 13, 10);
-        ov.fillStyle(0x7dff8a).fillTriangle(left + 13, top + ch - 20, left + 7, top + ch - 9, left + 19, top + ch - 9);
+      if (this.mergeable.has(u.id)) { // 합성 가능: 좌하단(하단 정보 띠 바로 위) 초록 ▲ 배지
+        const by = top + ch - 33;
+        ov.fillStyle(0x0b2a12, 0.9).fillCircle(left + 13, by, 10);
+        ov.fillStyle(0x7dff8a).fillTriangle(left + 13, by - 7, left + 7, by + 4, left + 19, by + 4);
       }
       if (u.locked) { // 잠금: 금색 점선 테두리 + 우상단 자물쇠
         const sides: [number, number, number, number, number][] = [
@@ -522,15 +561,34 @@ export class BattleScene extends Phaser.Scene {
         ov.fillStyle(0xff9a3c).fillTriangle(left + 13, top + 5, left + 5, top + 19, left + 21, top + 19);
         ov.fillStyle(0x140a0d).fillRect(left + 12, top + 9, 2, 6).fillRect(left + 12, top + 16, 2, 2);
       }
+      if (this.picked.has(u.id)) { // 다중 판매 선택: 붉은 굵은 테두리 + 우상단 체크 (잠금 유닛은 선택 불가라 자물쇠와 겹치지 않음)
+        ov.lineStyle(4, 0xff4d5e, 0.95).strokeRect(left + 3, top + 3, cw - 6, ch - 6);
+        ov.fillStyle(0xff4d5e, 0.12).fillRect(left + 3, top + 3, cw - 6, ch - 6);
+        ov.fillStyle(0xc8102e).fillCircle(left + cw - 14, top + 14, 10);
+        ov.lineStyle(3, 0xffffff).lineBetween(left + cw - 19, top + 14, left + cw - 15, top + 18).lineBetween(left + cw - 15, top + 18, left + cw - 8, top + 9);
+      }
       if (u.id === this.selectedId) { // 선택: 흰 테두리 + 금색 안쪽 테두리
         g.lineStyle(3, 0xffffff).strokeRect(left + 2, top + 2, cw - 4, ch - 4);
         g.lineStyle(1.5, 0xffd84a).strokeRect(left + 5, top + 5, cw - 10, ch - 10);
       }
     }
+    const info = this.infoG.clear();
     for (let i = 0; i < FIELD_SLOTS; i++) {
       const u = byIndex[i];
-      this.starTexts[i].setText(u ? stars(u.star) : '');
-      this.nameTexts[i].setText(u ? memberById(u.memberId).name : '');
+      const st = this.starTexts[i].setText(u ? stars(u.star) : '');
+      const nt = this.nameTexts[i].setText(u ? memberById(u.memberId).name : '');
+      if (u) { // 하단 정보 띠: [별 이름]을 칸 가운데 정렬, 칸 폭 안으로 제한 (5성 + 5글자 이름도 한 줄)
+        const { x: cx, y: cy } = cellCenter(i % GRID.cols, Math.floor(i / GRID.cols));
+        const raw = st.width + 2 + nt.width;
+        const k = Math.min(1, (GRID.cellW - 16) / raw); // 칸 폭을 넘는 경우(5성 + 긴 이름)만 글자 축소
+        st.setScale(k); nt.setScale(k);
+        const w = raw * k;
+        const x0 = cx - w / 2;
+        st.setPosition(x0, cy + INFO_Y);
+        nt.setPosition(x0 + (st.width + 2) * k, cy + INFO_Y);
+        const bw = w + 8;
+        info.fillStyle(0x140a0d, 0.72).fillRoundedRect(cx - bw / 2, cy + INFO_Y - 8, bw, 16, 6);
+      }
       // 캐릭터 이미지: 멤버+등급 텍스처가 있으면 비율 유지해 칸 안(60px)에 맞춤, 합성으로 등급이 바뀌면 자동 교체
       const img = this.unitImgs[i];
       const key = u ? artKey(u.memberId, u.star) : '';
@@ -681,7 +739,7 @@ export class BattleScene extends Phaser.Scene {
     const m = memberById(u.memberId);
     return {
       id: u.id, memberId: u.memberId, name: m.name, color: hex(m.color), star: u.star,
-      area: u.area, index: u.index, locked: u.locked, mergeable: this.mergeable.has(u.id),
+      area: u.area, index: u.index, locked: u.locked, mergeable: this.mergeable.has(u.id), picked: this.picked.has(u.id),
     };
   }
 
@@ -721,6 +779,11 @@ export class BattleScene extends Phaser.Scene {
   private publish() {
     const b = this.battle;
     this.mergeable = mergeableIds(b);
+    if (b.isOver && this.multiSell) { this.multiSell = false; this.picked.clear(); } // 게임 종료 시 선택 초기화
+    for (const id of this.picked) { // 합성 재료로 사라졌거나 잠긴 유닛은 선택에서 제외
+      const pu = b.units.find((x) => x.id === id);
+      if (!pu || pu.locked) this.picked.delete(id);
+    }
     const u = this.selectedUnit();
     const storage: (UnitView | null)[] = Array(STORAGE_SLOTS).fill(null);
     for (const s of b.units) if (s.area === 'storage') storage[s.index] = this.view(s);
@@ -752,6 +815,11 @@ export class BattleScene extends Phaser.Scene {
       focusUnlocked: isFocusUnlocked(b),
       autoMerge: this.autoMerge,
       moveMode: this.moveMode,
+      multiSell: {
+        on: this.multiSell,
+        ids: [...this.picked],
+        total: [...this.picked].reduce((a, id) => a + sellPrice(b.units.find((x) => x.id === id)!.star), 0),
+      },
       dragging: (() => { const d = this.battle.units.find((u) => u.id === this.dragId); return d ? this.view(d) : null; })(),
       anyMergeable: this.mergeable.size > 0,
       storage,

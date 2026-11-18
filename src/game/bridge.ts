@@ -41,6 +41,17 @@ export interface UnitView {
   index: number;
   locked: boolean;
   mergeable: boolean;
+  /** 다중 판매 모드에서 선택됨 */
+  picked: boolean;
+}
+
+/** 다중 판매 모드 상태 */
+export interface MultiSellView {
+  on: boolean;
+  /** 선택 유닛 ID (현재 존재·잠금 해제 유닛만) */
+  ids: number[];
+  /** 예상 판매 금액 합계 */
+  total: number;
 }
 
 export interface SelectedUnitInfo extends UnitView {
@@ -100,6 +111,7 @@ export interface HudState {
   focusUnlocked: boolean;
   autoMerge: boolean;
   moveMode: boolean;
+  multiSell: MultiSellView;
   /** 드래그 중인 유닛 */
   dragging: UnitView | null;
   anyMergeable: boolean;
@@ -121,6 +133,12 @@ export interface GameControls {
   toggleLock(): void;
   toggleMoveMode(): void;
   sell(id: number): void;
+  /** 다중 판매 모드 켜기/끄기 (끄면 선택 초기화) */
+  toggleMultiSell(): void;
+  /** 다중 판매 선택 전체 해제 */
+  clearMultiSell(): void;
+  /** 선택 유닛 일괄 판매 — 실행 직전 재검증 */
+  sellMany(ids: number[]): void;
   /** 드래그 시작 (Phaser 전투 칸·React 보관함 공통) */
   beginDrag(unitId: number): void;
   /** 난이도 선택 후 시작 (진행 중 변경 불가: 재시작 시에만 다시 선택) */

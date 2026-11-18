@@ -9,7 +9,7 @@ import { damageReduction, initTimers, speedMult, updateMonsterAbilities } from '
 import { newSynergyState, synAttackSpeed, synCooldown, synergyAfterHit, synergyDamageMult, updateSynergies } from './synergy';
 import type { DamageTag, SynergyDef } from '../data/synergies';
 import { UPGRADE_IDS, upgradeBonus, type UpgradeId } from '../data/upgrades';
-import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
+import { DIFFICULTIES, regularHpMult, type DifficultyId } from '../data/difficulty';
 
 export { pickTarget };
 
@@ -403,7 +403,7 @@ export class Battle {
   }
 
   spawn(def: MonsterDef, hpScale: number, distance = 0, summonerId: number | null = null): Monster {
-    const hp = Math.round(def.boss ? def.hp * this.diff.bossHpMult : def.hp * hpScale * this.diff.hpMult);
+    const hp = Math.round(def.boss ? def.hp * this.diff.bossHpMult : def.hp * hpScale * regularHpMult(this.diff, this.waveNumber));
     const p = pathPoint(distance);
     const m: Monster = {
       id: this.nextId++, def, hp, maxHp: hp, distance, x: p.x, y: p.y, slows: [], hpScale, summonerId, timers: [],

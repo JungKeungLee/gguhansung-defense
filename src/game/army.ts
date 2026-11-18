@@ -118,6 +118,16 @@ export function sell(b: Battle, id: number): ActionResult<number> {
   return ok(price);
 }
 
+/** 일괄 판매: 실행 직전 상태로 재검증 (없어진 유닛·잠금 유닛은 건너뜀, 판매 금액은 개별 판매와 동일) */
+export function sellMany(b: Battle, ids: number[]): { sold: number; gold: number; skipped: number } {
+  let sold = 0, gold = 0, skipped = 0;
+  for (const id of new Set(ids)) {
+    const r = sell(b, id);
+    if (r.ok) { sold++; gold += r.value; } else skipped++;
+  }
+  return { sold, gold, skipped };
+}
+
 export function toggleLock(b: Battle, id: number): ActionResult<boolean> {
   const u = b.units.find((x) => x.id === id);
   if (!u) return fail('notFound');

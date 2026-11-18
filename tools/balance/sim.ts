@@ -1,6 +1,7 @@
 // 4.5단계 밸런스 시뮬레이터 — 실제 Battle/army 로직 재사용, 고정 시드, 미래 정보 미사용
 // 사용법: npm run balance -- [전략=ABCDEF] [시드=1,2,3] [v=상세|-] [설정.json 경로 또는 JSON 문자열]
 //   Windows(npm)는 JSON 따옴표가 사라지므로 파일 경로 사용 권장: npm run balance -- ABCDE 1,2,3 - tools/balance/configs/nosyn.json
+//   전략 R 무작위 플레이(일반 소환 연타+자동 합성, 재배치·판매·집중 소환 없음, 강화는 설정 upg를 따름)
 //   전략 A 일반 소환·다양화 / B 집중 소환 주력 / C 단독 1성 판매 후 재소환 / D 역할 혼합 배치 / E 상현·하현 5인 조합 지향 / F 5성 1명 집중 육성
 //   '{"nosyn":1}' 시너지 비활성(기존 밸런스 비교)
 //   오버라이드 예: '{"peak":1}' '{"power":1}' '{"diag":1}' '{"curve":{"k":0.085}}' '{"mult":0.5,"bossMult":0.5}'
@@ -14,7 +15,7 @@ import { WAVES } from '../../src/data/waves';
 import { MONSTERS } from '../../src/data/monsters';
 import { cellCenter, pathPoint, PATH_LENGTH, FIELD_SLOTS, GRID } from '../../src/game/layout';
 
-export type Strategy = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+export type Strategy = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'R';
 import { readFileSync } from 'node:fs';
 import { SYNERGIES, SYNERGY_CAPS, TIER_RULES } from '../../src/data/synergies';
 import { UPGRADES, UPGRADE_IDS, UPGRADE_MAX } from '../../src/data/upgrades';
@@ -111,6 +112,11 @@ const score1 = (id: string) => { const s = unitStats(id, 1); return s.damage * s
 
 function act(b: Battle, strat: Strategy, rng: () => number) {
   if (b.isOver) return;
+  if (strat === 'R') { // 무작위: 골드가 되면 일반 소환(빈 칸 순서대로 들어감) + 자동 합성. 배치는 손대지 않음
+    buyUpgrades(b);
+    while (b.gold >= 30 && summon(b, undefined, rng).ok) mergeAll(b);
+    return;
+  }
   buyUpgrades(b); // 강화 목표 우선 구매 후 남은 골드로 소환
   for (let guard = 0; guard < 40; guard++) {
     const f = focusTarget(b, strat);
@@ -138,7 +144,7 @@ function act(b: Battle, strat: Strategy, rng: () => number) {
 
 export interface SimResult {
   strat: Strategy; seed: number; win: boolean; wave: number; reason: string; finalLeft: number | null;
-  stars: number[]; peakWave: number; peakAlive: number; bossTimes: Record<string, number>; bossCarry: string[]; goldSpent: number; field: string; power: number[]; peakBy: number[]; synBy: number[]; firstTier: Record<number, number>; ever: number; topAt: Record<number, number>; synFirst: Record<string, number>; lordTime: number | null; allStars: number[]; avgGold: number; endGold: number; violations: number; topEnd: number; upg: string; upgSpent: number; synEnd: number; peakAll: number; life: number;
+  time: number; stars: number[]; peakWave: number; peakAlive: number; bossTimes: Record<string, number>; bossCarry: string[]; goldSpent: number; field: string; power: number[]; peakBy: number[]; synBy: number[]; firstTier: Record<number, number>; ever: number; topAt: Record<number, number>; synFirst: Record<string, number>; lordTime: number | null; allStars: number[]; avgGold: number; endGold: number; violations: number; topEnd: number; upg: string; upgSpent: number; synEnd: number; peakAll: number; life: number;
 }
 
 let DIAG = false; let NOSYN = false;
@@ -176,7 +182,7 @@ export function runSim(strat: Strategy, seed: number, dt = 1 / 30): SimResult {
   const stars = [0, 0, 0, 0, 0]; for (const u of b.units) if (u.area === 'field') stars[u.star - 1]++;
   const field = b.units.filter((u) => u.area === 'field').sort((x, y) => y.star - x.star).slice(0, 6).map((u) => `${MEMBERS.find((m) => m.id === u.memberId)!.name}${u.star}`).join(' ');
   void g0; void STAR_DAMAGE_MULT; void WAVES;
-  return { strat, seed, win: b.phase === 'victory', wave: b.waveNumber, reason: b.defeatReason ?? (b.phase === 'victory' ? 'win' : b.phase), finalLeft: b.finalTimer === null ? null : +b.finalTimer.toFixed(0), stars, peakWave, peakAlive, bossTimes, bossCarry, goldSpent: spent, field, power, peakBy, synBy, firstTier, ever: ever.size, topAt, synFirst, lordTime: bossTimes['혼돈의 군주'] ?? null, upg: UPGRADE_IDS.map((id) => b.upgrades[id]).join(''), upgSpent: UPGRADE_IDS.reduce((s, id) => s + UPGRADES[id].costs.slice(0, b.upgrades[id]).reduce((a, c) => a + c, 0), 0), synEnd: b.syn.active.size, peakAll: peakAlive, avgGold: Math.round(goldSum / Math.max(1, goldN)), endGold: b.gold, violations, topEnd: Math.max(0, ...b.units.map((u) => u.star)), allStars: [1, 2, 3, 4, 5].map((s) => b.units.filter((u) => u.star === s).length), life: life.length ? +(life.reduce((a, c) => a + c, 0) / life.length).toFixed(1) : 0 };
+  return { strat, seed, time: +t.toFixed(0), win: b.phase === 'victory', wave: b.waveNumber, reason: b.defeatReason ?? (b.phase === 'victory' ? 'win' : b.phase), finalLeft: b.finalTimer === null ? null : +b.finalTimer.toFixed(0), stars, peakWave, peakAlive, bossTimes, bossCarry, goldSpent: spent, field, power, peakBy, synBy, firstTier, ever: ever.size, topAt, synFirst, lordTime: bossTimes['혼돈의 군주'] ?? null, upg: UPGRADE_IDS.map((id) => b.upgrades[id]).join(''), upgSpent: UPGRADE_IDS.reduce((s, id) => s + UPGRADES[id].costs.slice(0, b.upgrades[id]).reduce((a, c) => a + c, 0), 0), synEnd: b.syn.active.size, peakAll: peakAlive, avgGold: Math.round(goldSum / Math.max(1, goldN)), endGold: b.gold, violations, topEnd: Math.max(0, ...b.units.map((u) => u.star)), allStars: [1, 2, 3, 4, 5].map((s) => b.units.filter((u) => u.star === s).length), life: life.length ? +(life.reduce((a, c) => a + c, 0) / life.length).toFixed(1) : 0 };
 }
 
 // CLI
@@ -187,6 +193,7 @@ const cfgArg = process.argv[5];
 const cfg = !cfgArg ? {} : cfgArg.trim().startsWith('{') ? JSON.parse(cfgArg) : JSON.parse(readFileSync(cfgArg, 'utf-8'));
 DIAG = !!cfg.diag; NOSYN = !!cfg.nosyn; UPG = cfg.upg ?? 'none'; DIFF = cfg.diff ?? 'normal';
 if (cfg.hard) Object.assign(DIFFICULTIES.hard, cfg.hard);
+if (cfg.normal) Object.assign(DIFFICULTIES.normal, cfg.normal); // 보통 난이도 후보 실험 (메모리에서만)
 if (cfg.upgPer) for (const [id, v] of Object.entries(cfg.upgPer)) (UPGRADES as any)[id].perLevel = v;
 if (cfg.upgCostMult) for (const u of Object.values(UPGRADES)) u.costs = u.costs.map((c) => Math.round(c * cfg.upgCostMult));
 if (cfg.scale) cfg.scale.forEach((v: number, i: number) => (WAVES[i].hpScale = v));
@@ -216,7 +223,7 @@ if (cfg.jsonl) {
     try { r = runSim(s, seed); } catch (e) { crash = String(e); }
     if (!r) { console.log(JSON.stringify({ s, seed, crash })); continue; }
     const fs = r.stars, n = fs.reduce((a, c) => a + c, 0);
-    console.log(JSON.stringify({ s, seed, win: r.win, wave: r.wave, reason: r.reason, left: r.finalLeft, lord: r.lordTime, gold: r.avgGold, endGold: r.endGold,
+    console.log(JSON.stringify({ s, seed, time: r.time, win: r.win, wave: r.wave, reason: r.reason, left: r.finalLeft, lord: r.lordTime, gold: r.avgGold, endGold: r.endGold,
       star: +(fs.reduce((a, c, i) => a + c * (i + 1), 0) / Math.max(1, n)).toFixed(2), fieldStars: fs, top20: r.topAt[20] ?? 0, top25: r.topAt[25] ?? 0, top30: r.topAt[30] ?? 0, topEnd: r.topEnd,
       syn: r.synEnd, syn20: r.synBy[20] ?? 0, upg: r.upg, upgSpent: r.upgSpent, spent: r.goldSpent, peak: r.peakAll, peakBy: r.peakBy.slice(1, 31), viol: r.violations, boss: r.bossTimes }));
   }
