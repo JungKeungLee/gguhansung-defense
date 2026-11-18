@@ -35,22 +35,23 @@ export interface SynergyDef {
 export const SYNERGY_CAPS = { atk: 0.1, attackSpeed: 0.08, skill: 0.1, cooldown: 0.1, /** 공격력계+스킬·광역계 합계 상한 */ damageTotal: 0.15 };
 
 /**
- * 등급 조건: 전원 minStar 이상 + 그중 서로 다른 멤버 highCount명이 3성 이상 (멤버별 전투 칸 최고 등급 1개로 판정 → 중복 계산 없음)
- * 6K: 3인·5인 전원 3성 이상, 10인 전원 2성 이상 + 5명 3성 이상 (6J: 3인 2성+1명 3성, 5인 2성+2명 3성, 10인 전원 1성)
+ * 등급 조건: 전원 minStar 이상 + 그중 서로 다른 멤버 highCount명이 highStar 이상 (멤버별 전투 칸 최고 등급 1개로 판정 → 중복 계산 없음, 보관함 제외)
+ * 6O: 2인 전원 3성 / 3인 전원 3성 + 1명 4성 / 5인 전원 3성 + 2명 4성 / 10인 전원 2성 + 7명 3성
+ *     (6K~6N: 3·5인 전원 3성, 10인 전원 2성 + 5명 3성, 2인 비활성)
  */
-export const TIER_RULES: Record<SynergyTier, { minStar: number; highCount: number }> = {
-  2: { minStar: 2, highCount: 0 }, // 6J부터 비활성 (DISABLED_TIERS)
-  3: { minStar: 3, highCount: 0 },
-  5: { minStar: 3, highCount: 0 },
-  10: { minStar: 2, highCount: 5 },
+export const TIER_RULES: Record<SynergyTier, { minStar: number; highCount: number; highStar: number }> = {
+  2: { minStar: 3, highCount: 0, highStar: 4 },
+  3: { minStar: 3, highCount: 1, highStar: 4 },
+  5: { minStar: 3, highCount: 2, highStar: 4 },
+  10: { minStar: 2, highCount: 7, highStar: 3 },
 };
 
 /** 발동 조건 설명 (패널·게임 설명 공통, TIER_RULES에서 생성) */
 export function tierRuleText(t: SynergyTier, short = false) {
   const r = TIER_RULES[t];
   const all = t === 10 ? (short ? '10명' : '멤버 10명 모두') : '전원';
-  if (short) return `${all} ${r.minStar}성↑${r.highCount ? ` · ${r.highCount}명 3성↑` : ''}`;
-  return `${all} ${r.minStar}성 이상${r.highCount ? ` + 그중 서로 다른 멤버 ${r.highCount}명 3성 이상` : ''}`;
+  if (short) return `${all} ${r.minStar}성↑${r.highCount ? ` · ${r.highCount}명 ${r.highStar}성↑` : ''}`;
+  return `${all} ${r.minStar}성 이상${r.highCount ? ` + 그중 서로 다른 멤버 ${r.highCount}명 ${r.highStar}성 이상` : ''}`;
 }
 
 const ALL_MEMBERS = ['yappu', 'harunotsuki', 'manjo', 'moya', 'yuntami', 'yamuji', 'nanwony', 'kkutinho', 'kimokdok', 'damyu'];
@@ -59,7 +60,7 @@ const ALL_MEMBERS = ['yappu', 'harunotsuki', 'manjo', 'moya', 'yuntami', 'yamuji
  * 6J: 비활성 발동 단계. 2인 시너지는 무작위 배치만으로 대부분 켜져 전략 차이를 줄여서 비활성화.
  * 정의(SYNERGY_DEFS)는 그대로 두므로 이 목록에서 2를 빼면 원래대로 복원됨.
  */
-export const DISABLED_TIERS: SynergyTier[] = [2];
+export const DISABLED_TIERS: SynergyTier[] = []; // 6O: 2인 시너지 복구 (6J~6N은 [2])
 export const isTierEnabled = (t: SynergyTier) => !DISABLED_TIERS.includes(t);
 
 /** 전체 시너지 정의 (비활성 단계 포함, 기존 기록의 이름 표시용으로도 사용) */

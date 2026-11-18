@@ -5,11 +5,11 @@ import { TIER_RULES, tierRuleText, type SynergyTier } from '../data/synergies';
 
 const TIER_LABEL: Record<number, string> = { 2: '2인', 3: '3인', 5: '5인', 10: '10인' };
 
-/** 달성 진행도: (조건 충족 멤버 수 + 충족한 3성 조건 수) / (멤버 수 + 필요 3성 수) */
+/** 달성 진행도: (minStar 충족 멤버 수 + 충족한 상위 등급(highStar) 조건 수) / (멤버 수 + 필요 상위 등급 수) */
 function progress(s: SynergyView) {
   const rule = TIER_RULES[s.tier as SynergyTier];
   const met = s.members.filter((m) => m.star >= rule.minStar).length;
-  const high = Math.min(rule.highCount, s.members.filter((m) => m.star >= 3).length);
+  const high = Math.min(rule.highCount, s.members.filter((m) => m.star >= rule.highStar).length);
   return (met + high) / (s.members.length + rule.highCount);
 }
 
@@ -36,7 +36,7 @@ function Item({ s, open, onToggle }: { s: SynergyView; open: boolean; onToggle: 
             <p className="syn-need">
               {tierRuleText(s.tier as SynergyTier, true)}
               {s.missing.length > 0 && ` · 부족: ${s.missing.map((id) => memberById(id).name).join(', ')}`}
-              {s.needHigh > 0 && ` · 3성 ${s.needHigh}명 더`}
+              {s.needHigh > 0 && ` · ${TIER_RULES[s.tier as SynergyTier].highStar}성 ${s.needHigh}명 더`}
             </p>
           )}
         </div>

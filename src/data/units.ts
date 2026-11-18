@@ -9,10 +9,10 @@ export const STAR_DAMAGE_MULT = [1, 2.3, 5.4, 12.5, 29];
 export const STAR_SKILL_DAMAGE_BONUS = [0, 0.05, 0.1, 0.15, 0.2];
 /** 비공격형 효과(버프·감속·소환) 지속시간 보너스 */
 export const STAR_SKILL_DURATION_BONUS = [0, 0.05, 0.1, 0.15, 0.2];
-/** 합성 재료 수: 1성 2개→2성, 2성 이상은 3개씩. index = 재료 별 - 1 (2성 2, 3성 6, 4성 18, 5성 54개의 1성) */
-export const MERGE_COUNT = [2, 3, 3, 3];
+/** 합성 재료 수 (6O): 1성 2개→2성, 2성 2개→3성, 3성 3개→4성, 4성 3개→5성. index = 재료 별 - 1 (1성 기준 2성 2, 3성 4, 4성 12, 5성 36개) */
+export const MERGE_COUNT = [2, 2, 3, 3];
 /** 등급별 판매 가격 = 1성 20G × 필요한 1성 수 (합성 전후 판매 가치 동일). index = 별 - 1 */
-export const SELL_PRICE = [20, 40, 120, 360, 1080];
+export const SELL_PRICE = [20, 40, 80, 240, 720];
 export const mergeCount = (star: number) => MERGE_COUNT[star - 1];
 
 /** 효과 중첩 상한 */

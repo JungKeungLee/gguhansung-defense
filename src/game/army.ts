@@ -1,5 +1,5 @@
 import { MEMBERS } from '../data/members';
-import { MAX_STAR, SELL_PRICE, mergeCount } from '../data/units';
+import { MAX_STAR, MERGE_COUNT, SELL_PRICE, mergeCount } from '../data/units';
 import { FOCUS_COST, FOCUS_RATE, FOCUS_UNLOCK_WAVE, SUMMON_COST } from '../data/economy';
 import { FIELD_SLOTS, STORAGE_SLOTS } from './layout';
 import { UPGRADES, UPGRADE_MAX, type UpgradeId } from '../data/upgrades';
@@ -21,7 +21,7 @@ export const FAIL_TEXT: Record<FailReason, string> = {
   locked: '잠금된 유닛입니다',
   maxStar: '5성은 더 이상 합성할 수 없습니다',
   maxLevel: '이미 최대 단계입니다',
-  noMaterial: '같은 멤버·같은 등급의 잠금 해제 유닛이 부족합니다 (1성 2개, 2성 이상 3개)',
+  noMaterial: `같은 멤버·같은 등급의 잠금 해제 유닛이 부족합니다 (${MERGE_COUNT.map((n, i) => `${i + 1}성 ${n}개`).join(', ')})`,
 };
 
 export const sellPrice = (star: number) => SELL_PRICE[star - 1];

@@ -21,7 +21,7 @@ export function fieldMaxStars(b: Battle) {
 export function isSatisfied(def: SynergyDef, max: Map<string, number>) {
   const rule = TIER_RULES[def.tier];
   const stars = def.members.map((id) => max.get(id) ?? 0);
-  return stars.every((s) => s >= rule.minStar) && stars.filter((s) => s >= 3).length >= rule.highCount;
+  return stars.every((s) => s >= rule.minStar) && stars.filter((s) => s >= rule.highStar).length >= rule.highCount;
 }
 
 /** 매 step 시작 시 활성 시너지 재판정. 판매·합성·이동 직후 다음 프레임에 즉시 반영 */
@@ -143,7 +143,7 @@ export function synergyViews(b: Battle): SynergyView[] {
     const rule = TIER_RULES[def.tier];
     const members = def.members.map((id) => ({ id, star: max.get(id) ?? 0 }));
     const missing = members.filter((x) => x.star < rule.minStar).map((x) => x.id);
-    const high = members.filter((x) => x.star >= 3).length;
+    const high = members.filter((x) => x.star >= rule.highStar).length;
     return {
       id: def.id, name: def.name, tier: def.tier, desc: def.desc, active: isSatisfied(def, max), members, missing,
       needHigh: Math.max(0, rule.highCount - high),
