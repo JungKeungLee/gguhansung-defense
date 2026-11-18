@@ -13,7 +13,7 @@ import { monsterArtUrl } from '../ui/monsterArt';
 import { GROUND_MARKER_SIZE, SKILL_FX, skillFxDuration, skillFxKey, type SkillFxSpec } from '../ui/skillFxMap';
 import { skillFxUrl } from '../ui/skillFxArt';
 import { MONSTER_ART_CONTENT, MONSTER_ART_FILE, monsterArtKey, monsterVisualSize } from '../ui/monsterArtMap';
-import { waveSpawnList } from '../data/waves';
+import { BOSS_POOL, RANDOM_MONSTERS, waveSpawnList } from '../data/waves';
 import { saveRecord, type PlayRecord } from '../records/records';
 import { buildRecord } from '../records/buildRecord';
 import {
@@ -126,7 +126,13 @@ export class BattleScene extends Phaser.Scene {
     const w = this.battle.waveIndex;
     if (w === this.prefetchedWave) return;
     this.prefetchedWave = w;
-    for (const i of [w, w + 1]) if (WAVES[i]) for (const id of new Set(waveSpawnList(WAVES[i]))) this.ensureMonsterArt(id);
+    for (const i of [w, w + 1]) {
+      const wd = WAVES[i];
+      if (!wd) continue;
+      // 랜덤 웨이브(31~50)는 구성을 시작 시 정하므로 후보 전체를 미리 불러옴
+      const ids = wd.random ? [...RANDOM_MONSTERS, ...(wd.bossPool ? BOSS_POOL : wd.boss ? [wd.boss] : [])] : waveSpawnList(wd);
+      for (const id of new Set(ids)) this.ensureMonsterArt(id);
+    }
   }
 
   private ensureSkillArt(memberId: string) {
@@ -793,6 +799,7 @@ export class BattleScene extends Phaser.Scene {
     hudStore.set({
       wave: b.waveNumber,
       totalWaves: WAVES.length,
+      bossGate: b.phase === 'prep' && b.gateBossId !== null,
       alive: b.monsters.length,
       maxAlive: MAX_ALIVE,
       phase: b.phase,

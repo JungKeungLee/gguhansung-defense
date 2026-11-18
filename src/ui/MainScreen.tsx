@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import mainBg from '../assets/backgrounds/main-menu.webp';
 import { BALANCE_VERSION } from '../data/version';
+import { WAVES } from '../data/waves';
 
 /**
  * 메인·난이도 선택 공통 배경 (전투 화면 위를 덮는 전체 화면 레이어).
@@ -21,7 +22,7 @@ export function MainMenu({ onStart, onGuide, onRecords }: { onStart: () => void;
     <div className="main-menu">
       <span className="mm-kicker">✦ 꾸한성 랜덤 디펜스 ✦</span>
       <h1 className="mm-title">꾸한성 디펜스</h1>
-      <p className="mm-sub">멤버를 소환·합성하고 시너지를 맞춰 30웨이브를 막아내세요</p>
+      <p className="mm-sub">멤버를 소환·합성하고 시너지를 맞춰 {WAVES.length}웨이브를 막아내세요</p>
       <div className="mm-buttons">
         <button className="mm-start" onClick={onStart}>게임 시작</button>
         <div className="mm-row">

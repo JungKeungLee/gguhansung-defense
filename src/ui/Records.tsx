@@ -13,7 +13,7 @@ import defeatBg from '../assets/backgrounds/defeat.webp';
 const synName = (id: string) => SYNERGY_DEFS.find((s) => s.id === id)?.name ?? id;
 const TIER_ORDER = (id: string) => -(SYNERGY_DEFS.find((s) => s.id === id)?.tier ?? 0);
 const reasonText = (r: PlayRecord) =>
-  r.result === 'victory' ? '30웨이브 전체 처치' : r.defeatReason === 'timeout' ? '최종 보스 제한시간 초과' : '살아 있는 몬스터 80마리 도달';
+  r.result === 'victory' ? `${r.wave}웨이브 전체 처치` : r.defeatReason === 'timeout' ? '최종 보스 제한시간 초과' : '살아 있는 몬스터 80마리 도달';
 
 /** 게임 종료 결과 (Scene이 종료 확정 시 1회 만든 기록을 표시만 함 — 재렌더링해도 저장 없음) */
 export function ResultPanel({ hud, onRestart, onMain, onRecords }: { hud: HudState; onRestart: () => void; onMain: () => void; onRecords: () => void }) {

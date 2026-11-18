@@ -4,7 +4,7 @@ import { MERGE_COUNT, SELL_PRICE, STAR_DAMAGE_MULT, STAR_SKILL_DAMAGE_BONUS, uni
 import { DISABLED_TIERS, SYNERGIES, SYNERGY_CAPS, isTierEnabled, tierRuleText } from '../data/synergies';
 import { UPGRADES, UPGRADE_IDS, UPGRADE_MAX } from '../data/upgrades';
 import { DIFFICULTIES } from '../data/difficulty';
-import { FOCUS_COST, FOCUS_RATE, FOCUS_UNLOCK_WAVE, START_GOLD, SUMMON_COST } from '../data/economy';
+import { FOCUS_COST, FOCUS_RATE, FOCUS_UNLOCK_WAVE, START_GOLD, SUMMON_COST, waveReward } from '../data/economy';
 import { MAX_ALIVE, FINAL_BOSS_TIME, WAVES } from '../data/waves';
 import CharAvatar from './CharAvatar';
 
@@ -40,13 +40,16 @@ export default function GuideModal({ onClose }: { onClose: () => void }) {
               <ul>
                 <li>{WAVES.length}웨이브의 몬스터를 모두 처치하면 승리합니다. 몬스터는 외곽 경로를 시계 방향으로 계속 돌며 사라지지 않습니다.</li>
                 <li>살아 있는 몬스터가 <b>{MAX_ALIVE}마리</b>에 도달하면 즉시 패배합니다.</li>
-                <li>{WAVES.length}웨이브 최종 보스가 등장하면 <b>{FINAL_BOSS_TIME}초</b> 안에 남은 몬스터를 모두 처치해야 합니다. 보스만 잡고 다른 몬스터가 남으면 승리가 아닙니다.</li>
-                <li>5·10·15·20·25·30웨이브에 보스가 등장합니다. 이전 웨이브 몬스터가 남아 있어도 다음 웨이브는 진행됩니다.</li>
+                <li>{WAVES.length}웨이브 최종 보스(강화된 혼돈의 군주)가 등장하면 <b>{FINAL_BOSS_TIME}초</b> 안에 남은 몬스터를 모두 처치해야 합니다. 보스만 잡고 다른 몬스터가 남으면 승리가 아닙니다.</li>
+                <li>5·10·15·20·25웨이브 보스는 처치하지 않아도 다음 웨이브가 진행됩니다.</li>
+                <li><b>30·35·40·45웨이브 보스는 처치해야 다음 웨이브로 넘어갑니다.</b> 30웨이브 혼돈의 군주는 중간 보스이며 제한시간이 없습니다.</li>
+                <li>31~{WAVES.length}웨이브는 기존 몬스터 3~5종이 웨이브 시작 시 무작위로 섞여 나오고, 35·40·45웨이브에는 기존 보스 중 하나가 무작위로 강화되어 등장합니다.</li>
               </ul>
               <h4>진행 방법</h4>
               <ul>
                 <li>게임은 <b>기본 2배속</b>으로 진행되며 [배속] 버튼 또는 <b>F키</b>로 2배속 ↔ 3배속을 바꿉니다. 웨이브·이동·공격·스킬 쿨타임 모두 같은 배속이 적용되고, 최종 보스 제한시간 180초는 게임 시간 기준입니다.</li>
                 <li>시작 골드 {START_GOLD}G. 몬스터 처치·웨이브 출현 완료 시 골드를 얻습니다.</li>
+                <li>웨이브 출현 완료 보상: <b>보통 {waveReward(1, 'normal')}~{waveReward(30, 'normal')}G</b>, <b>어려움 {waveReward(1, 'hard')}~{waveReward(30, 'hard')}G</b> (26웨이브부터는 같은 금액, 웨이브당 1회)</li>
                 <li><b>일반 소환 {SUMMON_COST}G</b>: 10명 중 무작위 1성. <b>집중 소환 {FOCUS_COST}G</b>({FOCUS_UNLOCK_WAVE}웨이브부터): 고른 멤버 {pct(FOCUS_RATE)} 확률.</li>
                 <li>소환된 유닛은 전투 칸(20칸)에 먼저, 가득 차면 보관함(20칸)에 들어갑니다. <b>보관함 유닛은 공격하지 않습니다.</b></li>
                 <li>유닛을 <b>드래그</b>하거나 선택 후 [이동]으로 전투 칸·보관함 사이를 옮기고, 유닛이 있는 칸에 놓으면 서로 교환됩니다.</li>

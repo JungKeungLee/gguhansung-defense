@@ -13,11 +13,13 @@ import GuideModal from './GuideModal';
 import { MainMenu, MainScreen } from './MainScreen';
 import { formatTime } from '../records/records';
 import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
+import { WAVES } from '../data/waves';
 
 function statusText(h: HudState) {
   if (h.phase === 'defeat') return '패배';
   if (h.phase === 'victory') return '승리';
   if (h.paused) return '일시정지';
+  if (h.phase === 'prep' && h.bossGate) return `보스 처치 시 W${h.wave + 1} 진행`;
   if (h.phase === 'prep') return `준비 · ${h.phaseTimer}초 후 W${h.wave + 1}`;
   if (h.phase === 'clearing') return `최종 정리 · 남은 ${h.alive}마리`;
   return '웨이브 진행 중';
@@ -103,11 +105,11 @@ const DIFF_INFO: Record<DifficultyId, { tag: string; badge?: string; points: str
   normal: {
     tag: '처음 플레이 · 규칙과 조합을 익히기 좋음',
     badge: '추천',
-    points: ['몬스터·보스 체력 ×2.5', '이동속도·등장 수는 기본', '골드 보상은 어려움과 동일'],
+    points: ['몬스터·보스 체력 ×2.5', '이동속도·등장 수는 기본', '웨이브 보상 +25G (80~155G)'],
   },
   hard: {
     tag: '숙련자용 · 배치·합성·강화가 모두 중요',
-    points: ['몬스터·보스 체력 ×3.0', '등장 수 +10% · 이동속도 +10%', '특수 능력·골드 보상은 보통과 동일'],
+    points: ['몬스터·보스 체력 ×3.0', '등장 수 +10% · 이동속도 +10%', '웨이브 보상 +30G (85~160G)'],
   },
 };
 
@@ -137,7 +139,7 @@ function DifficultyModal({ onPick, onBack }: { onPick: (d: DifficultyId) => void
           })}
         </div>
         <div className="dm-foot">
-          <span>30웨이브</span><span>몬스터 80마리 도달 시 패배</span><span>최종 보스 180초 제한</span>
+          <span>{WAVES.length}웨이브</span><span>몬스터 80마리 도달 시 패배</span><span>{WAVES.length}웨이브 최종 보스 180초 제한</span>
           <p>진행 중에는 난이도를 바꿀 수 없으며, 재시작하면 다시 선택합니다.</p>
           <button className="dm-back" onClick={onBack}>← 메인으로</button>
         </div>
@@ -223,7 +225,7 @@ export default function App() {
         {hud?.started && <span className={`diff-chip ${hud.difficulty}`}>{DIFFICULTIES[hud.difficulty].name}</span>}
         <div className="stat">
           <span className="label">웨이브</span>
-          <b>{hud ? hud.wave : 0}<small> / {hud?.totalWaves ?? 30}</small></b>
+          <b>{hud ? hud.wave : 0}<small> / {hud?.totalWaves ?? WAVES.length}</small></b>
         </div>
         <div className={`stat monsters ${danger >= 0.875 ? 'danger' : danger >= 0.75 ? 'warn' : ''}`} title="80마리에 도달하면 즉시 패배">
           <span className="label">몬스터 {danger >= 0.75 && '⚠'}</span>

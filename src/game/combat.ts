@@ -1,7 +1,7 @@
 import { monsterDef, type MonsterDef } from '../data/monsters';
 import { EFFECT_CAPS, unitStats } from '../data/units';
 import { START_GOLD, waveReward } from '../data/economy';
-import { FINAL_BOSS_TIME, FIRST_PREP_TIME, MAX_ALIVE, PREP_TIME, WAVES, waveSpawnList } from '../data/waves';
+import { FINAL_BOSS_TIME, FIRST_PREP_TIME, MAX_ALIVE, PREP_TIME, WAVES, resolveWave, waveSpawnList, type WaveDef } from '../data/waves';
 import { FIELD_SLOTS, GRID, STORAGE_SLOTS, cellCenter, pathPoint } from './layout';
 import { pickTarget } from './targeting';
 import { basicAttack, skillOf, tryCastSkill } from './skills';
@@ -46,6 +46,8 @@ export interface Monster {
   /** 매 프레임 계산: 주변 보호 효과·가속 효과 */
   guard: number;
   speedAura: number;
+  /** 최종 보스 여부 — 몬스터 ID가 아니라 등장 웨이브로 결정 (50웨이브 보스만 true, 30웨이브 혼돈의 군주는 false) */
+  final: boolean;
 }
 
 /** attack: 일반 공격(회피·일반 방어 적용), skill: 스킬(회피 불가) */
@@ -153,6 +155,10 @@ export class Battle {
   /** 분열·보스 소환 대기열 (프레임 끝에 생성, 웨이브 출현 수와 별개) */
   pending: { id: string; distance: number; hpScale: number; summonerId: number | null }[] = [];
   private waveList: string[] = [];
+  /** 이번 웨이브 실제 구성 (랜덤 웨이브는 시작 시 1회 확정) */
+  private curWave: WaveDef | null = null;
+  /** 처치해야 다음 웨이브로 넘어가는 보스 ID (30·35·40·45웨이브). null이면 대기 없음 */
+  gateBossId: number | null = null;
   onHit?: (x: number, y: number, killed: boolean, monsterId: number) => void;
   onFx?: (fx: FxEvent) => void;
   private nextId = 1;
@@ -279,7 +285,7 @@ export class Battle {
     if (killed) {
       this.kills++;
       this.gold += m.def.gold;
-      if (m.def.final) this.finalBossKilled = true;
+      if (m.final) this.finalBossKilled = true;
       if (owner) owner.kills++;
       const sp = m.def.split;
       if (sp) for (let k = 0; k < sp.count; k++) this.queueSpawn(sp.monster, m.distance - 14 * k, m.hpScale, m.summonerId);
@@ -373,24 +379,33 @@ export class Battle {
   }
 
   private updateWave(dt: number) {
+    if (this.phase === 'prep' && this.gateBossId !== null) {
+      // 보스 처치 대기 (30·35·40·45): 타이머 정지, 다음 웨이브·보상·소환 없음. 처치되면 준비 시간 새로 시작
+      if (this.monsters.some((m) => m.id === this.gateBossId && m.hp > 0)) return;
+      this.gateBossId = null;
+      this.timer = PREP_TIME;
+    }
     this.timer -= dt;
     if (this.phase === 'prep' && this.timer <= 0) {
       this.waveIndex++;
       this.spawned = 0;
-      this.waveList = waveSpawnList(WAVES[this.waveIndex], this.diff.countMult);
+      this.curWave = resolveWave(WAVES[this.waveIndex], this.waveNumber, this.rng); // 랜덤 구성은 여기서 1회만 확정
+      this.waveList = waveSpawnList(this.curWave, this.diff.countMult);
       this.phase = 'spawning';
     }
     if (this.phase !== 'spawning') return;
-    const wave = WAVES[this.waveIndex];
+    const wave = this.curWave ?? WAVES[this.waveIndex];
     const count = this.waveList.length;
     while (this.timer <= 0 && this.spawned < count) {
-      this.spawn(monsterDef(this.waveList[this.spawned]), wave.hpScale);
+      const isBoss = !!wave.boss && this.spawned === count - 1; // 보스는 목록 마지막
+      const m = this.spawn(monsterDef(this.waveList[this.spawned]), wave.hpScale, 0, null, isBoss ? { baseHp: wave.bossHp, final: !!wave.final } : undefined);
+      if (isBoss && wave.gate) this.gateBossId = m.id;
       this.spawned++;
       if (this.monsters.length >= MAX_ALIVE) return this.defeat('overflow');
       this.timer += wave.interval;
     }
     if (this.spawned >= count) {
-      this.gold += waveReward(this.waveNumber); // 출현 완료 시 1회 지급 (직후 phase 변경)
+      this.gold += waveReward(this.waveNumber, this.difficulty); // 출현 완료 시 1회 지급 (직후 phase 변경), 난이도별 추가분 포함
       const last = this.waveIndex >= WAVES.length - 1;
       this.phase = last ? 'clearing' : 'prep';
       this.timer = last ? 0 : PREP_TIME;
@@ -402,16 +417,18 @@ export class Battle {
     return this.waveList.length;
   }
 
-  spawn(def: MonsterDef, hpScale: number, distance = 0, summonerId: number | null = null): Monster {
-    const hp = Math.round(def.boss ? def.hp * this.diff.bossHpMult : def.hp * hpScale * regularHpMult(this.diff, this.waveNumber));
+  /** opts.baseHp: 웨이브별 보스 기본 체력(난이도 보스 배율 1회 적용), opts.final: 최종 보스(50웨이브) */
+  spawn(def: MonsterDef, hpScale: number, distance = 0, summonerId: number | null = null, opts?: { baseHp?: number; final?: boolean }): Monster {
+    const hp = Math.round(def.boss ? (opts?.baseHp ?? def.hp) * this.diff.bossHpMult : def.hp * hpScale * regularHpMult(this.diff, this.waveNumber));
+    const final = !!opts?.final;
     const p = pathPoint(distance);
     const m: Monster = {
       id: this.nextId++, def, hp, maxHp: hp, distance, x: p.x, y: p.y, slows: [], hpScale, summonerId, timers: [],
-      armorRemain: 0, armorAmount: 0, shieldHp: 0, shieldRemain: 0, lastStandRemain: 0, lastStandUsed: false, guard: 0, speedAura: 0,
+      armorRemain: 0, armorAmount: 0, shieldHp: 0, shieldRemain: 0, lastStandRemain: 0, lastStandUsed: false, guard: 0, speedAura: 0, final,
     };
     initTimers(m);
     this.monsters.push(m);
-    if (def.final && this.finalTimer === null) this.finalTimer = FINAL_BOSS_TIME; // 실제 등장 순간 시작
+    if (final && this.finalTimer === null) this.finalTimer = FINAL_BOSS_TIME; // 50웨이브 최종 보스 실제 등장 순간에만 시작
     return m;
   }
 
