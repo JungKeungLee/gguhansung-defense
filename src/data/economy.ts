@@ -18,10 +18,10 @@ export const WAVE_REWARDS = [
 ];
 
 /**
- * 6L: 난이도별 웨이브 추가 보상 (기본 보상에 1회 가산). 소환·합성과 전역 강화에 나눠 투자할 여유
- * 보통 +25G(30웨이브 합계 +750G), 어려움 +30G(+900G). 6K는 공통 +20G
+ * 6N: 난이도별 웨이브 추가 보상 (기본 보상에 1회 가산). 소환·합성과 전역 강화에 나눠 투자할 여유
+ * 보통 +35G, 어려움 +45G (6L: 보통 +25G, 어려움 +30G)
  */
-export const WAVE_BONUS: Record<DifficultyId, number> = { normal: 25, hard: 30 };
+export const WAVE_BONUS: Record<DifficultyId, number> = { normal: 35, hard: 45 };
 
 /** 웨이브 출현 완료 보상 = 기본 + 난이도 추가분. difficulty 생략 시 보통 기준 (기존 호출부 호환) */
 export function waveReward(wave: number, difficulty: DifficultyId = 'normal') {
