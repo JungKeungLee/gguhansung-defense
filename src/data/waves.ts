@@ -29,6 +29,8 @@ export const FIRST_PREP_TIME = 5;
 export const PREP_TIME = 6;
 /** 최종 보스 등장 후 제한시간(초) */
 export const FINAL_BOSS_TIME = 180;
+/** 30·35·40·45웨이브 보스 대기 제한(게임 시간 초): 보스 등장부터 계산, 지나면 보스를 남긴 채 준비 시간 후 다음 웨이브 */
+export const BOSS_GATE_TIME = 30;
 
 type G = [MonsterId, number][];
 type Plan = { g: G; boss?: MonsterId } & Pick<WaveDef, 'random' | 'bossPool' | 'bossHp' | 'gate' | 'final'>;

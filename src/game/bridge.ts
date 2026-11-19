@@ -94,6 +94,8 @@ export interface HudState {
   phaseTimer: number;
   /** 보스 처치 대기 중 (30·35·40·45웨이브: 보스를 잡아야 다음 웨이브) */
   bossGate: boolean;
+  /** 보스 대기 남은 게임 시간(초, 올림). 대기 중이 아니면 null */
+  gateRemain: number | null;
   /** 최종 보스 남은 제한시간(초), 등장 전 null */
   finalTimer: number | null;
   defeatReason: DefeatReason | null;

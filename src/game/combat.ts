@@ -1,7 +1,7 @@
 import { monsterDef, type MonsterDef } from '../data/monsters';
 import { EFFECT_CAPS, unitStats } from '../data/units';
 import { START_GOLD, waveReward } from '../data/economy';
-import { FINAL_BOSS_TIME, FIRST_PREP_TIME, MAX_ALIVE, PREP_TIME, WAVES, resolveWave, waveSpawnList, type WaveDef } from '../data/waves';
+import { BOSS_GATE_TIME, FINAL_BOSS_TIME, FIRST_PREP_TIME, MAX_ALIVE, PREP_TIME, WAVES, resolveWave, waveSpawnList, type WaveDef } from '../data/waves';
 import { FIELD_SLOTS, GRID, STORAGE_SLOTS, cellCenter, pathPoint } from './layout';
 import { pickTarget } from './targeting';
 import { basicAttack, skillOf, tryCastSkill } from './skills';
@@ -159,6 +159,8 @@ export class Battle {
   private curWave: WaveDef | null = null;
   /** 처치해야 다음 웨이브로 넘어가는 보스 ID (30·35·40·45웨이브). null이면 대기 없음 */
   gateBossId: number | null = null;
+  /** 보스 대기 남은 게임 시간(초). 보스 등장 시 BOSS_GATE_TIME에서 시작, step(dt)로만 감소(일시정지 중 정지·배속 반영) */
+  gateTimer: number | null = null;
   onHit?: (x: number, y: number, killed: boolean, monsterId: number) => void;
   onFx?: (fx: FxEvent) => void;
   private nextId = 1;
@@ -379,11 +381,17 @@ export class Battle {
   }
 
   private updateWave(dt: number) {
-    if (this.phase === 'prep' && this.gateBossId !== null) {
-      // 보스 처치 대기 (30·35·40·45): 타이머 정지, 다음 웨이브·보상·소환 없음. 처치되면 준비 시간 새로 시작
-      if (this.monsters.some((m) => m.id === this.gateBossId && m.hp > 0)) return;
-      this.gateBossId = null;
-      this.timer = PREP_TIME;
+    if (this.gateBossId !== null) {
+      // 보스 대기 (30·35·40·45): 처치하거나 게임 시간 30초가 지나면 대기 해제 → 준비 시간 6초 후 다음 웨이브 (1회만).
+      // 만료 시 보스는 제거하지 않고 계속 전투. 대기 중에는 다음 웨이브·보상·소환 없음
+      this.gateTimer = (this.gateTimer ?? BOSS_GATE_TIME) - dt;
+      const alive = this.monsters.some((m) => m.id === this.gateBossId && m.hp > 0);
+      if (alive && this.gateTimer > 0) { if (this.phase === 'prep') return; }
+      else {
+        this.gateBossId = null;
+        this.gateTimer = null;
+        if (this.phase === 'prep') this.timer = PREP_TIME;
+      }
     }
     this.timer -= dt;
     if (this.phase === 'prep' && this.timer <= 0) {
@@ -399,7 +407,7 @@ export class Battle {
     while (this.timer <= 0 && this.spawned < count) {
       const isBoss = !!wave.boss && this.spawned === count - 1; // 보스는 목록 마지막
       const m = this.spawn(monsterDef(this.waveList[this.spawned]), wave.hpScale, 0, null, isBoss ? { baseHp: wave.bossHp, final: !!wave.final } : undefined);
-      if (isBoss && wave.gate) this.gateBossId = m.id;
+      if (isBoss && wave.gate) { this.gateBossId = m.id; this.gateTimer = BOSS_GATE_TIME; } // 등장 순간부터 30초
       this.spawned++;
       if (this.monsters.length >= MAX_ALIVE) return this.defeat('overflow');
       this.timer += wave.interval;

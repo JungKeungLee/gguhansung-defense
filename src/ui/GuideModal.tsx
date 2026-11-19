@@ -5,7 +5,7 @@ import { DISABLED_TIERS, SYNERGIES, SYNERGY_CAPS, isTierEnabled, tierRuleText } 
 import { UPGRADES, UPGRADE_IDS, UPGRADE_MAX } from '../data/upgrades';
 import { DIFFICULTIES } from '../data/difficulty';
 import { FOCUS_COST, FOCUS_RATE, FOCUS_UNLOCK_WAVE, START_GOLD, SUMMON_COST, waveReward } from '../data/economy';
-import { MAX_ALIVE, FINAL_BOSS_TIME, WAVES } from '../data/waves';
+import { BOSS_GATE_TIME, MAX_ALIVE, FINAL_BOSS_TIME, PREP_TIME, WAVES } from '../data/waves';
 import CharAvatar from './CharAvatar';
 
 /** 게임 설명·조합법. 모든 수치는 게임 데이터에서 직접 읽어 표시 (데이터 변경 시 자동 반영) */
@@ -42,7 +42,7 @@ export default function GuideModal({ onClose }: { onClose: () => void }) {
                 <li>살아 있는 몬스터가 <b>{MAX_ALIVE}마리</b>에 도달하면 즉시 패배합니다.</li>
                 <li>{WAVES.length}웨이브 최종 보스(강화된 혼돈의 군주)가 등장하면 <b>{FINAL_BOSS_TIME}초</b> 안에 남은 몬스터를 모두 처치해야 합니다. 보스만 잡고 다른 몬스터가 남으면 승리가 아닙니다.</li>
                 <li>5·10·15·20·25웨이브 보스는 처치하지 않아도 다음 웨이브가 진행됩니다.</li>
-                <li><b>30·35·40·45웨이브 보스는 처치해야 다음 웨이브로 넘어갑니다.</b> 30웨이브 혼돈의 군주는 중간 보스이며 제한시간이 없습니다.</li>
+                <li><b>30·35·40·45웨이브 보스</b>는 등장 후 {BOSS_GATE_TIME}초(게임 시간) 동안 다음 웨이브를 막습니다. 그 안에 처치하면 바로, 못 잡으면 {BOSS_GATE_TIME}초 뒤 보스가 남은 채로 준비 시간 {PREP_TIME}초 후 다음 웨이브가 시작됩니다. 30웨이브 혼돈의 군주는 중간 보스이며 최종 보스 제한시간이 없습니다.</li>
                 <li>31~{WAVES.length}웨이브는 기존 몬스터 3~5종이 웨이브 시작 시 무작위로 섞여 나오고, 35·40·45웨이브에는 기존 보스 중 하나가 무작위로 강화되어 등장합니다.</li>
               </ul>
               <h4>진행 방법</h4>

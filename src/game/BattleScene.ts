@@ -800,6 +800,7 @@ export class BattleScene extends Phaser.Scene {
       wave: b.waveNumber,
       totalWaves: WAVES.length,
       bossGate: b.phase === 'prep' && b.gateBossId !== null,
+      gateRemain: b.gateBossId !== null && b.gateTimer !== null ? Math.max(0, Math.ceil(b.gateTimer)) : null,
       alive: b.monsters.length,
       maxAlive: MAX_ALIVE,
       phase: b.phase,

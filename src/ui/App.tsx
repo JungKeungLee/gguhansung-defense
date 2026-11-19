@@ -13,13 +13,13 @@ import GuideModal from './GuideModal';
 import { MainMenu, MainScreen } from './MainScreen';
 import { formatTime } from '../records/records';
 import { DIFFICULTIES, type DifficultyId } from '../data/difficulty';
-import { WAVES } from '../data/waves';
+import { PREP_TIME, WAVES } from '../data/waves';
 
 function statusText(h: HudState) {
   if (h.phase === 'defeat') return '패배';
   if (h.phase === 'victory') return '승리';
   if (h.paused) return '일시정지';
-  if (h.phase === 'prep' && h.bossGate) return `보스 처치 시 W${h.wave + 1} 진행`;
+  if (h.phase === 'prep' && h.bossGate) return `다음 웨이브까지 ${(h.gateRemain ?? 0) + PREP_TIME}초 · 보스 생존 중`;
   if (h.phase === 'prep') return `준비 · ${h.phaseTimer}초 후 W${h.wave + 1}`;
   if (h.phase === 'clearing') return `최종 정리 · 남은 ${h.alive}마리`;
   return '웨이브 진행 중';
